@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
     <style>
+        /* Modifikasi body agar elemen menyusun ke bawah (column) */
         body { font-family: 'Courier New', Courier, monospace; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
         .container { background: #161b22; padding: 25px; border-radius: 10px; border: 1px solid #30363d; width: 100%; max-width: 600px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
@@ -48,11 +49,13 @@
         
         .copy-btn { position: absolute; top: -15px; right: 10px; background: #1f6feb; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; display: none; }
         
+        /* Styling untuk Footer & UI Translate (Hasil konversi Tailwind) */
         .custom-translate { margin-top: 25px; margin-bottom: 10px; text-align: center; width: 100%; max-width: 600px; }
         .custom-lang-select { background: #161b22; color: #c9d1d9; border: 1px solid #30363d; border-radius: 8px; padding: 10px; font-size: 14px; outline: none; cursor: pointer; width: 100%; max-width: 300px; font-family: 'Courier New', monospace; }
         .custom-lang-select:focus { border-color: #58a6ff; box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.3); }
         .custom-footer { margin-top: 15px; text-align: center; font-size: 12px; color: #8b949e; width: 100%; }
 
+        /* Sembunyikan Bawaan Google Translate */
         #google_translate_element { display: none; }
         .goog-te-banner-frame { display: none !important; }
         body { top: 0px !important; }
@@ -81,6 +84,7 @@
                 <li>Klik <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> kodenya di Termux dan tekan Enter.</li>
             </ol>
         </div>
+
         <div class="input-group">
             <label>1. Pilih Aksi FFmpeg:</label>
             <select id="ffAction">
@@ -89,19 +93,23 @@
                 <option value="cut">Potong Video (Cut)</option>
             </select>
         </div>
+        
         <div id="ocrBox">
             <label style="color: #3fb950;">📸 2. Upload Screenshot Rincian File:</label>
             <input type="file" id="screenshotPicker" accept="image/*" onchange="processScreenshot(this)">
             <div id="ocrStatus" style="color: #8b949e;">Pilih gambar screenshot dari galeri...</div>
         </div>
+
         <div class="input-group">
             <label>Folder Lokasi:</label>
             <input type="text" id="folderLocation" value="/storage/emulated/0/DCIM/ScreenRecorder">
         </div>
+        
         <div class="input-group">
             <label>Nama File Input:</label>
             <input type="text" id="fileNameInput" placeholder="Contoh: video.mp4">
         </div>
+
         <div class="input-group">
             <label>3. Nama File Output (Hasil):</label>
             <input type="text" id="ffOutput" value="hasil_proses.mp4">
@@ -118,8 +126,8 @@
         <div class="guide-box" style="border-left-color: #238636;">
             📥 <strong>Tata Cara (yt-dlp - Download Video):</strong>
             <ol>
-                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install python ffmpeg -y && pip install -U yt-dlp</code></li>
-                <li>Salin link video dari YouTube / TikTok / IG.</li>
+                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install python ffmpeg -y && pip install yt-dlp</code></li>
+                <li>Salin link video dari YouTube / TikTok.</li>
                 <li>Tempel link pada kolom di bawah ini.</li>
                 <li>Klik <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> di Termux. Hasil tersimpan di folder Download.</li>
             </ol>
@@ -132,7 +140,7 @@
             </select>
         </div>
         <div class="input-group">
-            <label>Link Video (YouTube/TikTok/IG):</label>
+            <label>Link Video (YouTube/TikTok):</label>
             <input type="text" id="ytInput" placeholder="https://www.youtube.com/watch?v=...">
         </div>
         <div class="input-group" id="ytTimeGroup" style="display:none;">
@@ -196,8 +204,9 @@
         <button id="copyBtn" class="copy-btn" onclick="copyCommand()">Copy Manual</button>
         <div class="output-box" id="cmdOutput">Hasil racikan akan muncul di sini...</div>
     </div>
-</div>
+</div> <!-- End of Container -->
 
+<!-- UI TRANSLATE BUATAN SENDIRI -->
 <div class="custom-translate" translate="no">
     <select id="custom-lang-select" onchange="gantiBahasa(this.value)" class="custom-lang-select">
         <option value="id">🇮🇩 Bahasa Indonesia</option>
@@ -211,10 +220,12 @@
     </select>
 </div>
 
+<!-- Copyright Footer -->
 <footer class="custom-footer" translate="no">
     &copy; 2026 ikram-cyber. All rights reserved.
 </footer>
 
+<!-- SCRIPT TRANSLATE SILUMAN -->
 <div id="google_translate_element"></div>
 <script type="text/javascript">
     function gantiBahasa(lang) {
@@ -231,6 +242,7 @@
     function googleTranslateElementInit() {
         new google.translate.TranslateElement({ pageLanguage: 'id', autoDisplay: false }, 'google_translate_element');
     }
+    // Anti-margin dari Google Translate
     setInterval(() => { if(document.body.style.top !== '0px') document.body.style.top = '0px'; }, 100);
 </script>
 <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
@@ -250,6 +262,7 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
+    // FUNGSI AI OCR UNIVERSAL
     async function processScreenshot(input) {
         if (!input.files || input.files.length === 0) return;
         const statusBox = document.getElementById('ocrStatus');
@@ -376,11 +389,7 @@
         const action = document.getElementById('ytAction').value;
         const input = document.getElementById('ytInput').value || 'LINK_VIDEO';
         let cmd = '';
-        
-        // Perintah bersih tanpa --impersonate agar kompatibel dengan Termux Android
-        if (action === 'full') {
-            cmd = `yt-dlp "${input}"`;
-        }
+        if (action === 'full') cmd = `yt-dlp "${input}"`;
         else if (action === 'clip') {
             const time = document.getElementById('ytTime').value.split('-');
             const start = time[0] ? time[0].trim() : '00:00:00';
