@@ -8,9 +8,6 @@
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4659624818164596" crossorigin="anonymous"></script>
 
-    <!-- Library OCR Tesseract.js -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-
     <style>
         body { font-family: 'Courier New', Courier, monospace; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .container { background: #161b22; padding: 25px; border-radius: 10px; border: 1px solid #30363d; width: 100%; max-width: 600px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
@@ -26,17 +23,13 @@
         
         .input-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; color: #8b949e; font-size: 14px; font-weight: bold; }
-        input[type="text"], select, input[type="file"] { width: 100%; box-sizing: border-box; padding: 10px; background: #010409; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; font-family: 'Courier New', monospace; outline: none; }
+        input[type="text"], select { width: 100%; box-sizing: border-box; padding: 10px; background: #010409; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; font-family: 'Courier New', monospace; outline: none; }
         input:focus, select:focus { border-color: #58a6ff; }
-        input[type="file"] { background: #21262d; padding: 8px; cursor: pointer; }
         
         /* Kotak Panduan */
         .guide-box { background: #1f242c; padding: 15px; border-radius: 8px; border-left: 4px solid #f85149; margin-bottom: 20px; font-size: 13px; line-height: 1.6; color: #c9d1d9; }
         .guide-box ol { margin: 5px 0 0 20px; padding: 0; }
         .guide-box li { margin-bottom: 8px; }
-
-        #ocrBox { display: block; background: #111a14; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px dashed #3fb950; }
-        #ocrStatus { font-size: 13px; margin-top: 8px; font-weight: bold; }
         
         .output-wrapper { position: relative; margin-top: 25px; }
         .output-box { background: #000; padding: 15px; border-radius: 6px; border: 1px solid #3fb950; color: #3fb950; font-size: 15px; min-height: 50px; word-wrap: break-word; }
@@ -66,8 +59,9 @@
         <div class="guide-box">
             ⚡ <strong>Sistem Auto-Search Termux:</strong>
             <ol>
-                <li>AI hanya mencari nama file dari screenshot.</li>
-                <li>Tidak perlu memikirkan letak folder! Termux yang akan melacak dan mengeksekusinya secara otomatis.</li>
+                <li>Cukup ketik atau <em>paste</em> <strong>Nama File</strong> beserta ekstensinya (misal: <code>video.mp4</code>).</li>
+                <li>Tidak perlu memikirkan letak folder! Termux yang akan melacak secara otomatis hingga ke akar penyimpanan.</li>
+                <li>Klik <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> di Termux.</li>
             </ol>
         </div>
 
@@ -80,19 +74,13 @@
             </select>
         </div>
         
-        <div id="ocrBox">
-            <label style="color: #3fb950;">📸 2. Upload Screenshot Rincian File:</label>
-            <input type="file" id="screenshotPicker" accept="image/*" onchange="processScreenshot(this)">
-            <div id="ocrStatus" style="color: #8b949e;">Pilih gambar screenshot dari galeri...</div>
-        </div>
-        
         <div class="input-group">
-            <label>Nama File Input:</label>
-            <input type="text" id="fileNameInput" placeholder="Contoh: video.mp4">
+            <label style="color: #3fb950;">2. Nama File Input (Dari Galeri):</label>
+            <input type="text" id="fileNameInput" placeholder="Contoh: rekaman-layar.mp4">
         </div>
 
         <div class="input-group">
-            <label>3. Nama File Output (Hasil):</label>
+            <label>3. Nama File Output (Hasil Akhir):</label>
             <input type="text" id="ffOutput" value="hasil_proses.mp4">
         </div>
         
@@ -161,47 +149,6 @@
         document.getElementById('ffTimeGroup').style.display = (this.value === 'cut') ? 'block' : 'none';
     });
 
-    async function processScreenshot(input) {
-        if (!input.files || input.files.length === 0) return;
-        const statusBox = document.getElementById('ocrStatus');
-        
-        // Scan hanya fokus cari nama file, proses jauh lebih cepat!
-        statusBox.innerText = "⏳ AI sedang mendeteksi nama file...";
-        statusBox.style.color = "#58a6ff";
-
-        try {
-            const image = input.files[0];
-            const result = await Tesseract.recognize(image, 'eng');
-            let text = result.data.text;
-            let filename = "";
-            
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-            const fileRegex = /[^\s/\\:*?"<>|]+(?: [^\s/\\:*?"<>|]+)*\.(?:mp4|mkv|avi|mov|webm|mp3|m4a|wav|aac|jpg|jpeg|png)/i;
-
-            for (let line of lines) {
-                let fMatch = line.match(fileRegex);
-                if (fMatch && !filename) {
-                    filename = fMatch[0].trim();
-                    break;
-                }
-            }
-
-            if (filename) {
-                document.getElementById('fileNameInput').value = filename;
-                statusBox.innerText = `✅ Nama file '${filename}' tertangkap!`;
-                statusBox.style.color = "#3fb950";
-            } else {
-                statusBox.innerText = "⚠️ Nama file tidak ditemukan. Coba input manual di bawah.";
-                statusBox.style.color = "#d29922";
-            }
-            
-        } catch (error) {
-            console.error(error);
-            statusBox.innerText = "❌ Terjadi kesalahan mesin OCR.";
-            statusBox.style.color = "#fe2c55";
-        }
-    }
-
     function setOutputAndCopy(cmd) {
         const outputBox = document.getElementById('cmdOutput');
         outputBox.innerText = cmd;
@@ -215,11 +162,11 @@
 
     function generateFFmpeg() {
         const action = document.getElementById('ffAction').value;
-        const inputName = document.getElementById('fileNameInput').value.trim();
+        let inputName = document.getElementById('fileNameInput').value.trim();
         const output = document.getElementById('ffOutput').value.trim() || 'hasil_proses.mp4';
         
         if (!inputName) {
-            alert("Harap masukkan nama file input atau upload screenshot terlebih dahulu!");
+            alert("Harap ketik atau paste nama file input terlebih dahulu!");
             return;
         }
 
