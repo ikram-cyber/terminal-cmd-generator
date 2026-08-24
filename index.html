@@ -66,20 +66,20 @@
             </select>
         </div>
         
-        <!-- Fitur AI OCR Ditaruh Paling Atas -->
+        <!-- Fitur AI OCR Diperbarui -->
         <div id="ocrBox">
             <label style="color: #3fb950;">📸 2. Upload Screenshot Rincian File (AI Auto-Fill):</label>
             <input type="file" id="screenshotPicker" accept="image/*" onchange="processScreenshot(this)">
-            <div id="ocrStatus">Masukkan gambar rincian untuk mendeteksi folder & nama file otomatis.</div>
+            <div id="ocrStatus">Upload screenshot rincian HP untuk isi folder & nama file otomatis.</div>
         </div>
 
         <div class="input-group">
-            <label>Atau Ketik Manual Folder Lokasi:</label>
+            <label>Folder Lokasi:</label>
             <input type="text" id="folderLocation" value="/storage/emulated/0/DCIM/ScreenRecorder">
         </div>
         
         <div class="input-group">
-            <label>Atau Ketik Manual Nama File Input:</label>
+            <label>Nama File Input:</label>
             <input type="text" id="fileNameInput" placeholder="Contoh: video.mp4">
         </div>
 
@@ -135,12 +135,12 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
-    // FUNGSI AI MEMBACA SCREENSHOT (BISA DETEKSI FOLDER & NAMA FILE SEKALIGUS)
+    // FUNGSI AI OCR YANG DIPERBAIKI TOTAL (MENANGKAP SATU BARIS PENUH)
     async function processScreenshot(input) {
         if (!input.files || input.files.length === 0) return;
         const statusBox = document.getElementById('ocrStatus');
         
-        statusBox.innerText = "⏳ AI sedang membaca gambar... (Tunggu sebentar)";
+        statusBox.innerText = "⏳ AI sedang memindai seluruh teks gambar...";
         statusBox.style.color = "#58a6ff";
 
         try {
@@ -148,32 +148,35 @@
             const result = await Tesseract.recognize(image, 'eng');
             let text = result.data.text;
             
-            const match = text.match(/(?:\/storage\/|Penyimpanan internal\/|Internal storage\/)[^\s\n]+/i);
+            // Menggunakan [^\r\n]+ agar menangkap satu baris penuh tanpa terpotong spasi
+            const match = text.match(/(?:\/storage\/|Penyimpanan internal\/|Internal storage\/)[^\r\n]+/i);
             
             if (match) {
                 let fullPath = match[0].trim();
                 
-                // Terjemahkan ke bahasa Termux
+                // Terjemahan ke format Termux
                 fullPath = fullPath.replace(/Penyimpanan internal/i, '/storage/emulated/0');
                 fullPath = fullPath.replace(/Internal storage/i, '/storage/emulated/0');
                 
-                const lastSlash = fullPath.lastIndexOf('/');
-                let folderPart = fullPath;
-                let filePart = "";
+                // Bersihkan karakter aneh yang sering dibaca OCR
+                fullPath = fullPath.replace(/["'<>]/g, '');
 
+                const lastSlash = fullPath.lastIndexOf('/');
                 if (lastSlash > 10) { 
-                    folderPart = fullPath.substring(0, lastSlash);
-                    filePart = fullPath.substring(lastSlash + 1);
+                    const folderPart = fullPath.substring(0, lastSlash);
+                    const filePart = fullPath.substring(lastSlash + 1);
+                    
+                    document.getElementById('folderLocation').value = folderPart;
+                    document.getElementById('fileNameInput').value = filePart;
+                    
+                    statusBox.innerText = `✅ Berhasil! File: ${filePart}`;
+                    statusBox.style.color = "#3fb950";
+                } else {
+                    statusBox.innerText = "⚠️ Jalur terbaca, tapi format nama file tidak valid.";
+                    statusBox.style.color = "#d29922";
                 }
-                
-                // Otomatis mengisi dua kolom sekaligus!
-                document.getElementById('folderLocation').value = folderPart;
-                document.getElementById('fileNameInput').value = filePart;
-                
-                statusBox.innerText = `✅ Sukses! Folder dan File (${filePart}) berhasil disalin.`;
-                statusBox.style.color = "#3fb950";
             } else {
-                statusBox.innerText = "❌ Jalur lokasi tidak ditemukan di gambar.";
+                statusBox.innerText = "❌ Jalur 'Penyimpanan internal/' tidak terdeteksi di gambar.";
                 statusBox.style.color = "#fe2c55";
             }
         } catch (error) {
@@ -201,7 +204,7 @@
         const output = document.getElementById('ffOutput').value.trim() || 'hasil_proses.mp4';
         
         if (!inputName) {
-            alert("Harap masukkan nama file input, atau upload screenshot!");
+            alert("Harap masukkan nama file input atau upload screenshot terlebih dahulu!");
             return;
         }
 
