@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal Command Generator</title>
+    <title>Terminal Command Generator & FFmpeg Helper</title>
 
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4659624818164596" crossorigin="anonymous"></script>
@@ -30,6 +30,11 @@
         input:focus, select:focus { border-color: #58a6ff; }
         input[type="file"] { background: #21262d; padding: 8px; cursor: pointer; }
         
+        /* Kotak Panduan untuk Pengunjung */
+        .guide-box { background: #1f242c; padding: 15px; border-radius: 8px; border-left: 4px solid #58a6ff; margin-bottom: 20px; font-size: 13px; line-height: 1.5; color: #c9d1d9; }
+        .guide-box ol { margin: 5px 0 0 20px; padding: 0; }
+        .guide-box li { margin-bottom: 5px; }
+
         #ocrBox { display: block; background: #111a14; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px dashed #3fb950; }
         #ocrStatus { font-size: 13px; margin-top: 8px; font-weight: bold; }
         
@@ -57,8 +62,20 @@
 
     <!-- TAB: FFMPEG -->
     <div id="ffmpeg" class="tab-content active">
+        
+        <!-- PANDUAN OTOMATIS UNTUK PENGUNJUNG -->
+        <div class="guide-box">
+            💡 <strong>Cara Pakai untuk Pengunjung:</strong>
+            <ol>
+                <li>Buka File Manager HP, cari video yang ingin diproses.</li>
+                <li>Tahan file video tersebut, lalu pilih <strong>Rincian / Details</strong>.</li>
+                <li>Ambil tangkapan layar (<em>Screenshot</em>) halaman rincian tersebut.</li>
+                <li>Upload screenshot-nya ke kotak hijau di bawah ini! AI akan mendeteksi folder & namanya secara otomatis.</li>
+            </ol>
+        </div>
+
         <div class="input-group">
-            <label>1. Pilih Aksi:</label>
+            <label>1. Pilih Aksi FFmpeg:</label>
             <select id="ffAction">
                 <option value="compress">Kompres Video (H.265)</option>
                 <option value="extract">Ekstrak Audio (MP3)</option>
@@ -66,29 +83,29 @@
             </select>
         </div>
         
-        <!-- Fitur AI OCR Pintar -->
+        <!-- Fitur AI OCR -->
         <div id="ocrBox">
-            <label style="color: #3fb950;">📸 2. Upload Screenshot Rincian File (AI Auto-Fill):</label>
+            <label style="color: #3fb950;">📸 2. Upload Screenshot Rincian File:</label>
             <input type="file" id="screenshotPicker" accept="image/*" onchange="processScreenshot(this)">
-            <div id="ocrStatus">Upload screenshot rincian HP untuk isi folder & nama file otomatis.</div>
+            <div id="ocrStatus" style="color: #8b949e;">Menunggu upload screenshot rincian HP...</div>
         </div>
 
         <div class="input-group">
-            <label>Folder Lokasi:</label>
+            <label>Folder Lokasi (Otomatis / Manual):</label>
             <input type="text" id="folderLocation" value="/storage/emulated/0/DCIM/ScreenRecorder">
         </div>
         
         <div class="input-group">
-            <label>Nama File Input:</label>
+            <label>Nama File Input (Otomatis / Manual):</label>
             <input type="text" id="fileNameInput" placeholder="Contoh: video.mp4">
         </div>
 
         <div class="input-group">
-            <label>3. Nama File Output (contoh: hasil.mp4):</label>
+            <label>3. Nama File Output (Hasil):</label>
             <input type="text" id="ffOutput" value="hasil_proses.mp4">
         </div>
         <div class="input-group" id="ffTimeGroup" style="display:none;">
-            <label>Waktu (Format HH:MM:SS):</label>
+            <label>Waktu Potong (Format HH:MM:SS):</label>
             <input type="text" id="ffTime" placeholder="Mulai - Selesai (00:00:10 - 00:00:30)">
         </div>
         <button class="action-btn" onclick="generateFFmpeg()">GENERATE & COPY</button>
@@ -135,12 +152,11 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
-    // FUNGSI AI OCR TINGKAT LANJUT (ANTI-SCREEN WRAP)
     async function processScreenshot(input) {
         if (!input.files || input.files.length === 0) return;
         const statusBox = document.getElementById('ocrStatus');
         
-        statusBox.innerText = "⏳ AI sedang memindai dan merapikan teks gambar...";
+        statusBox.innerText = "⏳ AI sedang membaca screenshot pengunjung...";
         statusBox.style.color = "#58a6ff";
 
         try {
@@ -148,7 +164,6 @@
             const result = await Tesseract.recognize(image, 'eng');
             let text = result.data.text;
             
-            // Cari posisi kata kunci penyimpanan
             const keywords = ["Penyimpanan internal", "Internal storage", "/storage/"];
             let startIndex = -1;
             for (let kw of keywords) {
@@ -160,13 +175,9 @@
             }
             
             if (startIndex !== -1) {
-                // Ambil teks setelah kata kunci sepanjang 300 karakter
                 let subText = text.substring(startIndex, startIndex + 300);
-                
-                // Hapus semua baris baru (newline) dan spasi berlebih akibat teks terpotong layar HP
                 let cleanPath = subText.replace(/[\r\n]+/g, "").trim();
                 
-                // Cari batas ekstensi file agar berhenti tepat di akhir nama file (misal .mp4)
                 const extMatch = cleanPath.match(/^(.*?(\.[a-zA-Z0-9]{2,5}))(?:\s|$)/);
                 if (extMatch) {
                     cleanPath = extMatch[1];
@@ -175,7 +186,6 @@
                     if (spaceIdx !== -1) cleanPath = cleanPath.substring(0, spaceIdx);
                 }
                 
-                // Terjemahkan ke format Termux
                 cleanPath = cleanPath.replace(/Penyimpanan internal/i, '/storage/emulated/0');
                 cleanPath = cleanPath.replace(/Internal storage/i, '/storage/emulated/0');
                 cleanPath = cleanPath.replace(/["'<>]/g, '');
@@ -188,14 +198,14 @@
                     document.getElementById('folderLocation').value = folderPart;
                     document.getElementById('fileNameInput').value = filePart;
                     
-                    statusBox.innerText = `✅ Berhasil! File: ${filePart}`;
+                    statusBox.innerText = `✅ Berhasil! File '${filePart}' terdeteksi otomatis.`;
                     statusBox.style.color = "#3fb950";
                 } else {
                     statusBox.innerText = "⚠️ Jalur terbaca, tapi nama file gagal dipisahkan.";
                     statusBox.style.color = "#d29922";
                 }
             } else {
-                statusBox.innerText = "❌ Jalur 'Penyimpanan internal/' tidak terdeteksi di gambar.";
+                statusBox.innerText = "❌ Jalur 'Penyimpanan internal/' tidak ditemukan di gambar.";
                 statusBox.style.color = "#fe2c55";
             }
         } catch (error) {
