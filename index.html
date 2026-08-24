@@ -23,9 +23,10 @@
         
         .input-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; color: #8b949e; font-size: 14px; }
-        input[type="text"], select, input[type="file"] { width: 100%; box-sizing: border-box; padding: 10px; background: #010409; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; font-family: 'Courier New', monospace; outline: none; }
+        input[type="text"], select { width: 100%; box-sizing: border-box; padding: 10px; background: #010409; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; font-family: 'Courier New', monospace; outline: none; }
         input:focus, select:focus { border-color: #58a6ff; }
-        input[type="file"] { background: #21262d; padding: 8px; cursor: pointer; }
+        
+        .smart-box { background: #111a14; padding: 15px; border-radius: 8px; border: 1px dashed #3fb950; margin-bottom: 15px; }
         
         .output-wrapper { position: relative; margin-top: 25px; }
         .output-box { background: #000; padding: 15px; border-radius: 6px; border: 1px solid #3fb950; color: #3fb950; font-size: 15px; min-height: 50px; word-wrap: break-word; }
@@ -49,7 +50,7 @@
         <button class="tab-btn" onclick="switchTab('python')">Python</button>
     </div>
 
-    <!-- TAB: FFMPEG -->
+    <!-- TAB: FFMPEG DENGAN SMART EXTRACTOR -->
     <div id="ffmpeg" class="tab-content active">
         <div class="input-group">
             <label>Pilih Aksi:</label>
@@ -60,22 +61,13 @@
             </select>
         </div>
         
-        <div class="input-group">
-            <label>Pilih File Video di HP:</label>
-            <input type="file" id="filePicker" accept="video/*">
-        </div>
-
-        <div class="input-group">
-            <label>Lokasi Folder (Pilih agar Termux tidak nyasar):</label>
-            <select id="folderLocation" onchange="toggleCustomFolder()">
-                <option value="/storage/emulated/0/DCIM/ScreenRecorder">Folder ScreenRecorder (DCIM)</option>
-                <option value="/storage/emulated/0/ScreenRecorder">Folder ScreenRecorder (Luar)</option>
-                <option value="/storage/emulated/0/Download">Folder Download</option>
-                <option value="/storage/emulated/0/Movies">Folder Movies</option>
-                <option value="/storage/emulated/0/DCIM/Camera">Folder Kamera (DCIM)</option>
-                <option value="custom">⚙️ Ketik Lokasi Sendiri...</option>
-            </select>
-            <input type="text" id="customFolderInput" placeholder="Contoh: /storage/emulated/0/WhatsApp/Media" style="display:none; margin-top:10px;">
+        <div class="smart-box">
+            <label style="color: #3fb950; font-weight: bold;">⚡ Tempel Alamat Rincian File di Sini:</label>
+            <input type="text" id="smartPath" placeholder="/storage/emulated/0/DCIM/Ikram.mp4" oninput="extractSmartPath()" style="border-color: #3fb950;">
+            <div id="smartResult" style="font-size: 13px; color: #8b949e; margin-top: 10px; display: none;">
+                📁 <strong>Folder:</strong> <span id="resFolder" style="color:#c9d1d9;">-</span><br>
+                📄 <strong>File:</strong> <span id="resFile" style="color:#c9d1d9;">-</span>
+            </div>
         </div>
 
         <div class="input-group">
@@ -89,7 +81,7 @@
         <button class="action-btn" onclick="generateFFmpeg()">Generate Command</button>
     </div>
 
-    <!-- TAB: YT-DLP, GIT, PYTHON (Sama seperti sebelumnya) -->
+    <!-- TAB LAINNYA (TETAP SAMA) -->
     <div id="ytdlp" class="tab-content">
         <div class="input-group"><label>Pilih Aksi:</label><select id="ytAction"><option value="full">Download Full Video</option><option value="clip">Potong Video Online</option></select></div>
         <div class="input-group"><label>Link Video:</label><input type="text" id="ytInput" placeholder="https://www.youtube.com/..."></div>
@@ -130,54 +122,60 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
-    // Menampilkan kolom input folder manual jika opsi "Ketik Lokasi Sendiri..." dipilih
-    function toggleCustomFolder() {
-        const val = document.getElementById('folderLocation').value;
-        document.getElementById('customFolderInput').style.display = (val === 'custom') ? 'block' : 'none';
-    }
-
     function setOutput(cmd) {
         document.getElementById('cmdOutput').innerText = cmd;
         document.getElementById('copyBtn').style.display = 'block';
     }
 
+    // VARIABEL GLOBAL UNTUK MENYIMPAN HASIL EKSTRAKSI
+    let globalFolder = '';
+    let globalFile = '';
+
+    // FUNGSI SMART EXTRACTOR
+    function extractSmartPath() {
+        let path = document.getElementById('smartPath').value.trim();
+        
+        // Bersihkan tulisan "Lokasi:" jika pengguna tidak sengaja menyalinnya dari rincian file HP
+        path = path.replace(/Lokasi:\s*/i, '').trim();
+
+        if (path.includes('/')) {
+            const lastSlash = path.lastIndexOf('/');
+            globalFolder = path.substring(0, lastSlash);
+            globalFile = path.substring(lastSlash + 1);
+
+            document.getElementById('resFolder').innerText = globalFolder;
+            document.getElementById('resFile').innerText = globalFile;
+            document.getElementById('smartResult').style.display = 'block';
+        } else {
+            globalFolder = '';
+            globalFile = '';
+            document.getElementById('smartResult').style.display = 'none';
+        }
+    }
+
     function generateFFmpeg() {
         const action = document.getElementById('ffAction').value;
-        const filePicker = document.getElementById('filePicker');
-        let folderLocation = document.getElementById('folderLocation').value;
-        
-        // Cek jika pengguna memilih folder custom
-        if (folderLocation === 'custom') {
-            folderLocation = document.getElementById('customFolderInput').value;
-            if (!folderLocation) {
-                alert("Harap ketik lokasi folder manual kamu!");
-                return;
-            }
-        }
-
         const output = document.getElementById('ffOutput').value || 'hasil_proses.mp4';
         
-        let inputName = 'input.mp4';
-        if (filePicker.files.length > 0) {
-            inputName = filePicker.files[0].name;
-        } else {
-            alert("Harap pilih file video terlebih dahulu!");
+        if (!globalFolder || !globalFile) {
+            alert("Harap tempel alamat rincian file yang valid di kotak yang disediakan!");
             return;
         }
 
         let ffmpegCmd = '';
         if (action === 'compress') {
-            ffmpegCmd = `ffmpeg -i "${inputName}" -vcodec libx265 -crf 28 "${output}"`;
+            ffmpegCmd = `ffmpeg -i "${globalFile}" -vcodec libx265 -crf 28 "${output}"`;
         } else if (action === 'extract') {
-            ffmpegCmd = `ffmpeg -i "${inputName}" -q:a 0 -map a "${output.replace('.mp4', '.mp3')}"`;
+            ffmpegCmd = `ffmpeg -i "${globalFile}" -q:a 0 -map a "${output.replace('.mp4', '.mp3')}"`;
         } else if (action === 'cut') {
             const time = document.getElementById('ffTime').value.split('-');
             const start = time[0] ? time[0].trim() : '00:00:00';
             const end = time[1] ? time[1].trim() : '00:00:30';
-            ffmpegCmd = `ffmpeg -i "${inputName}" -ss ${start} -to ${end} -c copy "${output}"`;
+            ffmpegCmd = `ffmpeg -i "${globalFile}" -ss ${start} -to ${end} -c copy "${output}"`;
         }
         
-        const finalCmd = `cd ${folderLocation} && ${ffmpegCmd}`;
+        // Membungkus nama folder dan file dengan tanda kutip agar aman dari spasi
+        const finalCmd = `cd "${globalFolder}" && ${ffmpegCmd}`;
         setOutput(finalCmd);
     }
 
