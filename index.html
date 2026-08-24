@@ -30,6 +30,7 @@
         .guide-box { background: #1f242c; padding: 15px; border-radius: 8px; border-left: 4px solid #f85149; margin-bottom: 20px; font-size: 13px; line-height: 1.6; color: #c9d1d9; }
         .guide-box ol { margin: 5px 0 0 20px; padding: 0; }
         .guide-box li { margin-bottom: 8px; }
+        .guide-box code { background: #010409; padding: 2px 5px; border-radius: 4px; color: #7ee787; border: 1px solid #30363d; }
         
         .output-wrapper { position: relative; margin-top: 25px; }
         .output-box { background: #000; padding: 15px; border-radius: 6px; border: 1px solid #3fb950; color: #3fb950; font-size: 15px; min-height: 50px; word-wrap: break-word; }
@@ -57,11 +58,12 @@
     <!-- TAB: FFMPEG -->
     <div id="ffmpeg" class="tab-content active">
         <div class="guide-box">
-            ⚡ <strong>Sistem Auto-Search Termux:</strong>
+            ⚡ <strong>Panduan Termux (Untuk Pemula):</strong>
             <ol>
-                <li>Cukup ketik atau <em>paste</em> <strong>Nama File</strong> beserta ekstensinya (misal: <code>video.mp4</code>).</li>
-                <li>Tidak perlu memikirkan letak folder! Termux yang akan melacak secara otomatis hingga ke akar penyimpanan.</li>
-                <li>Klik <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> di Termux.</li>
+                <li><strong>Instalasi Alat (Sekali Saja):</strong> Buka aplikasi Termux, ketik <code>pkg update && pkg install ffmpeg -y</code> lalu tekan Enter.</li>
+                <li><strong>Beri Akses Memori:</strong> Ketik <code>termux-setup-storage</code> lalu tekan Enter. Jika muncul pop-up di layar HP, pilih <strong>Izinkan</strong> (Penting agar Termux bisa mencari file).</li>
+                <li><strong>Cara Pakai:</strong> Ketik / <em>paste</em> nama file video kamu di bawah. Termux yang akan mencari sendiri letak foldernya!</li>
+                <li>Klik tombol <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> (tempel) hasilnya di Termux dan tekan Enter.</li>
             </ol>
         </div>
 
@@ -75,12 +77,12 @@
         </div>
         
         <div class="input-group">
-            <label style="color: #3fb950;">2. Nama File Input (Dari Galeri):</label>
+            <label style="color: #3fb950;">2. Nama File Input (Buka Galeri & Salin Namanya):</label>
             <input type="text" id="fileNameInput" placeholder="Contoh: rekaman-layar.mp4">
         </div>
 
         <div class="input-group">
-            <label>3. Nama File Output (Hasil Akhir):</label>
+            <label>3. Nama File Output (Bebas / Hasil Akhir):</label>
             <input type="text" id="ffOutput" value="hasil_proses.mp4">
         </div>
         
@@ -183,7 +185,6 @@
         }
         
         // MAGIC COMMAND: Termux akan melacak keberadaan file secara rekursif lalu mengeksekusinya
-        // Tanda seru (!) di pesan error diubah menjadi titik (.) untuk menghindari bash history event error
         const magicCmd = `TARGET=$(find /storage/emulated/0 -type f -name "${inputName}" 2>/dev/null | head -n 1); if [ -n "$TARGET" ]; then cd "$(dirname "$TARGET")" && FILE_NAME=$(basename "$TARGET") && ${baseCmd}; else echo -e "\\e[31m❌ Error: File '${inputName}' tidak ditemukan di memori internal.\\e[0m"; fi`;
         
         setOutputAndCopy(magicCmd);
