@@ -22,24 +22,20 @@
         .tab-content.active { display: block; }
         
         .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #8b949e; font-size: 14px; font-weight: bold; }
-        input[type="text"], select, input[type="file"] { width: 100%; box-sizing: border-box; padding: 10px; background: #010409; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; font-family: 'Courier New', monospace; outline: none; }
+        label { display: block; margin-bottom: 5px; color: #8b949e; font-size: 14px; }
+        input[type="text"], select { width: 100%; box-sizing: border-box; padding: 10px; background: #010409; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; font-family: 'Courier New', monospace; outline: none; }
         input:focus, select:focus { border-color: #58a6ff; }
-        input[type="file"] { background: #21262d; padding: 8px; cursor: pointer; }
         
-        /* Style untuk Tombol Jalur Pintas */
-        .path-group { display: flex; gap: 5px; flex-wrap: wrap; }
-        .path-btn { background: #21262d; color: #8b949e; border: 1px solid #30363d; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.2s; flex-grow: 1; text-align: center; }
-        .path-btn.active { background: #238636; color: white; border-color: #2ea043; }
+        .smart-box { background: #111a14; padding: 15px; border-radius: 8px; border: 1px dashed #3fb950; margin-bottom: 15px; }
         
         .output-wrapper { position: relative; margin-top: 25px; }
         .output-box { background: #000; padding: 15px; border-radius: 6px; border: 1px solid #3fb950; color: #3fb950; font-size: 15px; min-height: 50px; word-wrap: break-word; }
         .output-box::before { content: "$ "; color: #8b949e; }
         
-        button.action-btn { background: #1f6feb; color: white; border: none; padding: 15px; width: 100%; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-        button.action-btn:hover { background: #388bfd; }
+        button.action-btn { background: #238636; color: white; border: none; padding: 12px; width: 100%; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        button.action-btn:hover { background: #2ea043; }
         
-        .copy-btn { position: absolute; top: -15px; right: 10px; background: #238636; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; display: none; }
+        .copy-btn { position: absolute; top: -15px; right: 10px; background: #1f6feb; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; display: none; }
     </style>
 </head>
 <body>
@@ -54,68 +50,60 @@
         <button class="tab-btn" onclick="switchTab('python')">Python</button>
     </div>
 
-    <!-- TAB: FFMPEG -->
+    <!-- TAB: FFMPEG DENGAN SMART EXTRACTOR -->
     <div id="ffmpeg" class="tab-content active">
         <div class="input-group">
-            <label>1. Pilih Aksi:</label>
+            <label>Pilih Aksi:</label>
             <select id="ffAction">
-                <option value="compress">Kompres Video (H.265)</option>
-                <option value="extract">Ekstrak Audio (MP3)</option>
-                <option value="cut">Potong Video (Cut)</option>
+                <option value="compress">1. Kompres Video (H.265)</option>
+                <option value="extract">2. Ekstrak Audio (MP3)</option>
+                <option value="cut">3. Potong Video (Cut)</option>
             </select>
         </div>
         
-        <div class="input-group">
-            <label>2. Pilih Video dari HP:</label>
-            <input type="file" id="filePicker" accept="video/*">
-        </div>
-
-        <div class="input-group">
-            <label>3. Posisi Folder Video Berada:</label>
-            <div class="path-group">
-                <button type="button" class="path-btn active" onclick="setPath(this, '/storage/emulated/0/DCIM/ScreenRecorder')">📁 DCIM/ScreenRecorder</button>
-                <button type="button" class="path-btn" onclick="setPath(this, '/storage/emulated/0/ScreenRecorder')">📁 Luar/ScreenRecorder</button>
-                <button type="button" class="path-btn" onclick="setPath(this, '/storage/emulated/0/Download')">📁 Download</button>
+        <div class="smart-box">
+            <label style="color: #3fb950; font-weight: bold;">⚡ Tempel Alamat Rincian File di Sini:</label>
+            <input type="text" id="smartPath" placeholder="/storage/emulated/0/DCIM/Ikram.mp4" oninput="extractSmartPath()" style="border-color: #3fb950;">
+            <div id="smartResult" style="font-size: 13px; color: #8b949e; margin-top: 10px; display: none;">
+                📁 <strong>Folder:</strong> <span id="resFolder" style="color:#c9d1d9;">-</span><br>
+                📄 <strong>File:</strong> <span id="resFile" style="color:#c9d1d9;">-</span>
             </div>
-            <!-- Menyimpan nilai folder yang dipilih secara diam-diam -->
-            <input type="hidden" id="selectedFolder" value="/storage/emulated/0/DCIM/ScreenRecorder">
         </div>
 
         <div class="input-group">
-            <label>4. Nama File Hasil (contoh: hasil.mp4):</label>
+            <label>Nama File Output (contoh: hasil.mp4):</label>
             <input type="text" id="ffOutput" value="hasil_proses.mp4">
         </div>
         <div class="input-group" id="ffTimeGroup" style="display:none;">
-            <label>Waktu Potong (Format HH:MM:SS):</label>
-            <input type="text" id="ffTime" placeholder="Mulai - Selesai (00:00:00 - 00:00:30)">
+            <label>Waktu (Format HH:MM:SS):</label>
+            <input type="text" id="ffTime" placeholder="Mulai - Selesai (00:00:10 - 00:00:30)">
         </div>
-        
-        <button class="action-btn" onclick="generateFFmpeg()">GENERATE & COPY</button>
+        <button class="action-btn" onclick="generateFFmpeg()">Generate Command</button>
     </div>
 
-    <!-- TAB: YT-DLP, GIT, PYTHON -->
+    <!-- TAB LAINNYA (TETAP SAMA) -->
     <div id="ytdlp" class="tab-content">
         <div class="input-group"><label>Pilih Aksi:</label><select id="ytAction"><option value="full">Download Full Video</option><option value="clip">Potong Video Online</option></select></div>
         <div class="input-group"><label>Link Video:</label><input type="text" id="ytInput" placeholder="https://www.youtube.com/..."></div>
         <div class="input-group" id="ytTimeGroup" style="display:none;"><label>Waktu:</label><input type="text" id="ytTime" placeholder="00:15:00 - 00:15:30"></div>
-        <button class="action-btn" onclick="generateYtdlp()">GENERATE & COPY</button>
+        <button class="action-btn" onclick="generateYtdlp()">Generate Command</button>
     </div>
 
     <div id="git" class="tab-content">
         <div class="input-group"><label>Pilih Aksi:</label><select id="gitAction"><option value="push">Full Commit & Push</option><option value="clone">Clone Repository</option></select></div>
-        <div class="input-group"><label>URL/Pesan Commit:</label><input type="text" id="gitInput" value="feat: update script"></div>
-        <button class="action-btn" onclick="generateGit()">GENERATE & COPY</button>
+        <div class="input-group"><label>URL/Pesan:</label><input type="text" id="gitInput" value="feat: update script"></div>
+        <button class="action-btn" onclick="generateGit()">Generate Command</button>
     </div>
 
     <div id="python" class="tab-content">
         <div class="input-group"><label>Pilih Aksi:</label><select id="pyAction"><option value="venv">Buat Virtual Env</option><option value="run">Jalankan Script (Nohup)</option></select></div>
-        <div class="input-group"><label>Nama Script / Folder:</label><input type="text" id="pyInput" value="main.py"></div>
-        <button class="action-btn" onclick="generatePython()">GENERATE & COPY</button>
+        <div class="input-group"><label>Input:</label><input type="text" id="pyInput" value="main.py"></div>
+        <button class="action-btn" onclick="generatePython()">Generate Command</button>
     </div>
 
     <div class="output-wrapper">
-        <button id="copyBtn" class="copy-btn" onclick="copyCommand()">Copy Manual</button>
-        <div class="output-box" id="cmdOutput">Hasil racikan kode akan muncul di sini...</div>
+        <button id="copyBtn" class="copy-btn" onclick="copyCommand()">Copy</button>
+        <div class="output-box" id="cmdOutput">Pilih tab, isi data, dan klik Generate...</div>
     </div>
 </div>
 
@@ -134,52 +122,61 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
-    // Fungsi untuk merubah warna tombol folder yang diklik dan menyimpan nilainya
-    function setPath(btnElement, pathValue) {
-        document.querySelectorAll('.path-btn').forEach(btn => btn.classList.remove('active'));
-        btnElement.classList.add('active');
-        document.getElementById('selectedFolder').value = pathValue;
+    function setOutput(cmd) {
+        document.getElementById('cmdOutput').innerText = cmd;
+        document.getElementById('copyBtn').style.display = 'block';
     }
 
-    function setOutputAndCopy(cmd) {
-        const outputBox = document.getElementById('cmdOutput');
-        outputBox.innerText = cmd;
-        document.getElementById('copyBtn').style.display = 'block';
+    // VARIABEL GLOBAL UNTUK MENYIMPAN HASIL EKSTRAKSI
+    let globalFolder = '';
+    let globalFile = '';
+
+    // FUNGSI SMART EXTRACTOR
+    function extractSmartPath() {
+        let path = document.getElementById('smartPath').value.trim();
         
-        // Otomatis langsung meng-copy ke clipboard tanpa perlu klik tombol copy lagi
-        navigator.clipboard.writeText(cmd).then(() => {
-            outputBox.style.borderColor = "#1f6feb";
-            setTimeout(() => { outputBox.style.borderColor = "#3fb950"; }, 500);
-        });
+        // Bersihkan tulisan "Lokasi:" jika pengguna tidak sengaja menyalinnya dari rincian file HP
+        path = path.replace(/Lokasi:\s*/i, '').trim();
+
+        if (path.includes('/')) {
+            const lastSlash = path.lastIndexOf('/');
+            globalFolder = path.substring(0, lastSlash);
+            globalFile = path.substring(lastSlash + 1);
+
+            document.getElementById('resFolder').innerText = globalFolder;
+            document.getElementById('resFile').innerText = globalFile;
+            document.getElementById('smartResult').style.display = 'block';
+        } else {
+            globalFolder = '';
+            globalFile = '';
+            document.getElementById('smartResult').style.display = 'none';
+        }
     }
 
     function generateFFmpeg() {
         const action = document.getElementById('ffAction').value;
-        const filePicker = document.getElementById('filePicker');
-        const folderLocation = document.getElementById('selectedFolder').value;
         const output = document.getElementById('ffOutput').value || 'hasil_proses.mp4';
         
-        if (filePicker.files.length === 0) {
-            alert("Harap klik 'Pilih Video dari HP' terlebih dahulu!");
+        if (!globalFolder || !globalFile) {
+            alert("Harap tempel alamat rincian file yang valid di kotak yang disediakan!");
             return;
         }
 
-        const inputName = filePicker.files[0].name;
         let ffmpegCmd = '';
-
         if (action === 'compress') {
-            ffmpegCmd = `ffmpeg -i "${inputName}" -vcodec libx265 -crf 28 "${output}"`;
+            ffmpegCmd = `ffmpeg -i "${globalFile}" -vcodec libx265 -crf 28 "${output}"`;
         } else if (action === 'extract') {
-            ffmpegCmd = `ffmpeg -i "${inputName}" -q:a 0 -map a "${output.replace('.mp4', '.mp3')}"`;
+            ffmpegCmd = `ffmpeg -i "${globalFile}" -q:a 0 -map a "${output.replace('.mp4', '.mp3')}"`;
         } else if (action === 'cut') {
             const time = document.getElementById('ffTime').value.split('-');
             const start = time[0] ? time[0].trim() : '00:00:00';
             const end = time[1] ? time[1].trim() : '00:00:30';
-            ffmpegCmd = `ffmpeg -i "${inputName}" -ss ${start} -to ${end} -c copy "${output}"`;
+            ffmpegCmd = `ffmpeg -i "${globalFile}" -ss ${start} -to ${end} -c copy "${output}"`;
         }
         
-        const finalCmd = `cd "${folderLocation}" && ${ffmpegCmd}`;
-        setOutputAndCopy(finalCmd);
+        // Membungkus nama folder dan file dengan tanda kutip agar aman dari spasi
+        const finalCmd = `cd "${globalFolder}" && ${ffmpegCmd}`;
+        setOutput(finalCmd);
     }
 
     function generateYtdlp() {
@@ -193,19 +190,19 @@
             const end = time[1] ? time[1].trim() : '00:00:30';
             cmd = `yt-dlp --download-sections "*${start}-${end}" "${input}"`;
         }
-        setOutputAndCopy(`cd /storage/emulated/0/Download && ${cmd}`);
+        setOutput(`cd /storage/emulated/0/Download && ${cmd}`);
     }
 
     function generateGit() {
         const action = document.getElementById('gitAction').value;
         const input = document.getElementById('gitInput').value;
-        setOutputAndCopy(action === 'push' ? `git add .\ngit commit -m "${input}"\ngit push` : `git clone ${input}`);
+        setOutput(action === 'push' ? `git add .\ngit commit -m "${input}"\ngit push` : `git clone ${input}`);
     }
 
     function generatePython() {
         const action = document.getElementById('pyAction').value;
         const input = document.getElementById('pyInput').value;
-        setOutputAndCopy(action === 'venv' ? `python -m venv ${input}\nsource ${input}/bin/activate` : `nohup python ${input} > output.log 2>&1 &`);
+        setOutput(action === 'venv' ? `python -m venv ${input}\nsource ${input}/bin/activate` : `nohup python ${input} > output.log 2>&1 &`);
     }
 
     function copyCommand() {
@@ -213,7 +210,8 @@
         navigator.clipboard.writeText(text).then(() => {
             const btn = document.getElementById('copyBtn');
             btn.innerText = "Tersalin!";
-            setTimeout(() => { btn.innerText = "Copy Manual"; }, 2000);
+            btn.style.background = "#238636";
+            setTimeout(() => { btn.innerText = "Copy"; btn.style.background = "#1f6feb"; }, 2000);
         });
     }
 </script>
