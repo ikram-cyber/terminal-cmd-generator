@@ -66,7 +66,7 @@
             </select>
         </div>
         
-        <!-- Fitur AI OCR Diperbarui -->
+        <!-- Fitur AI OCR Pintar -->
         <div id="ocrBox">
             <label style="color: #3fb950;">📸 2. Upload Screenshot Rincian File (AI Auto-Fill):</label>
             <input type="file" id="screenshotPicker" accept="image/*" onchange="processScreenshot(this)">
@@ -135,12 +135,12 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
-    // FUNGSI AI OCR YANG DIPERBAIKI TOTAL (MENANGKAP SATU BARIS PENUH)
+    // FUNGSI AI OCR TINGKAT LANJUT (ANTI-SCREEN WRAP)
     async function processScreenshot(input) {
         if (!input.files || input.files.length === 0) return;
         const statusBox = document.getElementById('ocrStatus');
         
-        statusBox.innerText = "⏳ AI sedang memindai seluruh teks gambar...";
+        statusBox.innerText = "⏳ AI sedang memindai dan merapikan teks gambar...";
         statusBox.style.color = "#58a6ff";
 
         try {
@@ -148,23 +148,42 @@
             const result = await Tesseract.recognize(image, 'eng');
             let text = result.data.text;
             
-            // Menggunakan [^\r\n]+ agar menangkap satu baris penuh tanpa terpotong spasi
-            const match = text.match(/(?:\/storage\/|Penyimpanan internal\/|Internal storage\/)[^\r\n]+/i);
+            // Cari posisi kata kunci penyimpanan
+            const keywords = ["Penyimpanan internal", "Internal storage", "/storage/"];
+            let startIndex = -1;
+            for (let kw of keywords) {
+                let idx = text.indexOf(kw);
+                if (idx !== -1) {
+                    startIndex = idx;
+                    break;
+                }
+            }
             
-            if (match) {
-                let fullPath = match[0].trim();
+            if (startIndex !== -1) {
+                // Ambil teks setelah kata kunci sepanjang 300 karakter
+                let subText = text.substring(startIndex, startIndex + 300);
                 
-                // Terjemahan ke format Termux
-                fullPath = fullPath.replace(/Penyimpanan internal/i, '/storage/emulated/0');
-                fullPath = fullPath.replace(/Internal storage/i, '/storage/emulated/0');
+                // Hapus semua baris baru (newline) dan spasi berlebih akibat teks terpotong layar HP
+                let cleanPath = subText.replace(/[\r\n]+/g, "").trim();
                 
-                // Bersihkan karakter aneh yang sering dibaca OCR
-                fullPath = fullPath.replace(/["'<>]/g, '');
+                // Cari batas ekstensi file agar berhenti tepat di akhir nama file (misal .mp4)
+                const extMatch = cleanPath.match(/^(.*?(\.[a-zA-Z0-9]{2,5}))(?:\s|$)/);
+                if (extMatch) {
+                    cleanPath = extMatch[1];
+                } else {
+                    let spaceIdx = cleanPath.indexOf(' ');
+                    if (spaceIdx !== -1) cleanPath = cleanPath.substring(0, spaceIdx);
+                }
+                
+                // Terjemahkan ke format Termux
+                cleanPath = cleanPath.replace(/Penyimpanan internal/i, '/storage/emulated/0');
+                cleanPath = cleanPath.replace(/Internal storage/i, '/storage/emulated/0');
+                cleanPath = cleanPath.replace(/["'<>]/g, '');
 
-                const lastSlash = fullPath.lastIndexOf('/');
+                const lastSlash = cleanPath.lastIndexOf('/');
                 if (lastSlash > 10) { 
-                    const folderPart = fullPath.substring(0, lastSlash);
-                    const filePart = fullPath.substring(lastSlash + 1);
+                    const folderPart = cleanPath.substring(0, lastSlash);
+                    const filePart = cleanPath.substring(lastSlash + 1);
                     
                     document.getElementById('folderLocation').value = folderPart;
                     document.getElementById('fileNameInput').value = filePart;
@@ -172,7 +191,7 @@
                     statusBox.innerText = `✅ Berhasil! File: ${filePart}`;
                     statusBox.style.color = "#3fb950";
                 } else {
-                    statusBox.innerText = "⚠️ Jalur terbaca, tapi format nama file tidak valid.";
+                    statusBox.innerText = "⚠️ Jalur terbaca, tapi nama file gagal dipisahkan.";
                     statusBox.style.color = "#d29922";
                 }
             } else {
