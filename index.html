@@ -118,7 +118,7 @@
         <div class="guide-box" style="border-left-color: #238636;">
             📥 <strong>Tata Cara (yt-dlp - Download Video):</strong>
             <ol>
-                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install python ffmpeg -y && pip install -U --pre yt-dlp curl_cffi</code></li>
+                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install python ffmpeg -y && pip install -U yt-dlp</code></li>
                 <li>Salin link video dari YouTube / TikTok / IG.</li>
                 <li>Tempel link pada kolom di bawah ini.</li>
                 <li>Klik <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> di Termux. Hasil tersimpan di folder Download.</li>
@@ -377,15 +377,15 @@
         const input = document.getElementById('ytInput').value || 'LINK_VIDEO';
         let cmd = '';
         
-        // Memaksa penyamaran spesifik sebagai Chrome agar tidak ditolak TikTok
+        // Perintah bersih tanpa --impersonate agar kompatibel dengan Termux Android
         if (action === 'full') {
-            cmd = `yt-dlp --impersonate chrome "${input}"`;
+            cmd = `yt-dlp "${input}"`;
         }
         else if (action === 'clip') {
             const time = document.getElementById('ytTime').value.split('-');
             const start = time[0] ? time[0].trim() : '00:00:00';
             const end = time[1] ? time[1].trim() : '00:00:30';
-            cmd = `yt-dlp --impersonate chrome --download-sections "*${start}-${end}" "${input}"`;
+            cmd = `yt-dlp --download-sections "*${start}-${end}" "${input}"`;
         }
         setOutputAndCopy(`cd /storage/emulated/0/Download && ${cmd}`);
     }
