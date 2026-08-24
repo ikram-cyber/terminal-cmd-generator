@@ -183,7 +183,8 @@
         }
         
         // MAGIC COMMAND: Termux akan melacak keberadaan file secara rekursif lalu mengeksekusinya
-        const magicCmd = `TARGET=$(find /storage/emulated/0 -type f -name "${inputName}" 2>/dev/null | head -n 1); if [ -n "$TARGET" ]; then cd "$(dirname "$TARGET")" && FILE_NAME=$(basename "$TARGET") && ${baseCmd}; else echo -e "\\e[31m❌ Error: File '${inputName}' tidak ditemukan di memori internal!\\e[0m"; fi`;
+        // Tanda seru (!) di pesan error diubah menjadi titik (.) untuk menghindari bash history event error
+        const magicCmd = `TARGET=$(find /storage/emulated/0 -type f -name "${inputName}" 2>/dev/null | head -n 1); if [ -n "$TARGET" ]; then cd "$(dirname "$TARGET")" && FILE_NAME=$(basename "$TARGET") && ${baseCmd}; else echo -e "\\e[31m❌ Error: File '${inputName}' tidak ditemukan di memori internal.\\e[0m"; fi`;
         
         setOutputAndCopy(magicCmd);
     }
