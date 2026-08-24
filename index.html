@@ -67,7 +67,7 @@
             <ol>
                 <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install ffmpeg -y</code></li>
                 <li>Buka video di <strong>Galeri</strong> &rarr; Klik ikon titik tiga (<strong>...</strong>) &rarr; Pilih <strong>Rincian</strong> &rarr; <em>Screenshot</em> layarnya.</li>
-                <li>Upload screenshot rincian itu ke kotak hijau di bawah (AI akan mendeteksi folder & nama file otomatis).</li>
+                <li>Upload screenshot rincian itu ke kotak hijau di bawah (AI universal akan mendeteksi folder & nama file otomatis).</li>
                 <li>Klik <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> kodenya di Termux dan tekan Enter.</li>
             </ol>
         </div>
@@ -208,11 +208,12 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
+    // FUNGSI AI OCR UNIVERSAL (MENDETEKSI BERBAGAI BAHASA DAN EKSTENSI FILE)
     async function processScreenshot(input) {
         if (!input.files || input.files.length === 0) return;
         const statusBox = document.getElementById('ocrStatus');
         
-        statusBox.innerText = "⏳ AI sedang membaca screenshot rincian...";
+        statusBox.innerText = "⏳ AI universal sedang membaca screenshot...";
         statusBox.style.color = "#58a6ff";
 
         try {
@@ -220,48 +221,78 @@
             const result = await Tesseract.recognize(image, 'eng');
             let text = result.data.text;
             
-            const keywords = ["Penyimpanan internal", "Internal storage", "/storage/"];
-            let startIndex = -1;
-            for (let kw of keywords) {
-                let idx = text.indexOf(kw);
-                if (idx !== -1) {
-                    startIndex = idx;
-                    break;
+            // AI Universal mencari baris teks yang mengandung ekstensi video (.mp4, .mkv, .mov, .avi)
+            // Ini membuat bahasa HP apa pun (Indonesia, Inggris, Spanyol, dll) tetap terbaca otomatis!
+            const lines = text.split(/[\r\n]+/);
+            let targetLine = "";
+            
+            for (let line of lines) {
+                if (/\.(mp4|mkv|mov|avi|webm)$/i.test(line.trim()) || /(DCIM|Download|Camera|Movies|Pictures|WhatsApp|Telegram)/i.test(line)) {
+                    if (line.includes('/') || line.includes('\\') || line.includes('internal') || line.includes('storage') || line.includes('DCIM')) {
+                        targetLine = line;
+                        break;
+                    }
                 }
             }
             
-            if (startIndex !== -1) {
-                let subText = text.substring(startIndex, startIndex + 300);
-                let cleanPath = subText.replace(/[\r\n]+/g, "").trim();
+            // Jika tidak ketemu baris spesifik, gabungkan teks yang mengandung nama file video
+            if (!targetLine) {
+                for (let line of lines) {
+                    if (/\.(mp4|mkv|mov|avi|webm)/i.test(line)) {
+                        targetLine = line;
+                        break;
+                    }
+                }
+            }
+
+            // Jika masih belum ketemu, ambil teks utuh yang ada ekstensi videonya
+            if (!targetLine) {
+                const matchExt = text.match(/[^\s\n]+\.(mp4|mkv|mov|avi|webm)/i);
+                if (matchExt) targetLine = matchExt[0];
+            }
+
+            if (targetLine) {
+                let cleanPath = targetLine.replace(/[\r\n]+/g, "").trim();
                 
-                const extMatch = cleanPath.match(/^(.*?(\.[a-zA-Z0-9]{2,5}))(?:\s|$)/);
+                // Bersihkan awalan teks sampah jika ada
+                cleanPath = cleanPath.replace(/^.*?(?=\/|Penyimpanan|Internal|\w+:)/i, '');
+                
+                // Batasi hanya sampai ekstensi file video
+                const extMatch = cleanPath.match(/^(.*?(\.(mp4|mkv|mov|avi|webm)))(?:\s|$)/i);
                 if (extMatch) {
                     cleanPath = extMatch[1];
-                } else {
-                    let spaceIdx = cleanPath.indexOf(' ');
-                    if (spaceIdx !== -1) cleanPath = cleanPath.substring(0, spaceIdx);
                 }
-                
+
+                // Terjemahan universal awalan bahasa HP ke format Termux
                 cleanPath = cleanPath.replace(/Penyimpanan internal/i, '/storage/emulated/0');
                 cleanPath = cleanPath.replace(/Internal storage/i, '/storage/emulated/0');
+                cleanPath = cleanPath.replace(/Almacenamiento interno/i, '/storage/emulated/0');
+                cleanPath = cleanPath.replace(/Stockage interne/i, '/storage/emulated/0');
                 cleanPath = cleanPath.replace(/["'<>]/g, '');
 
+                // Jika tidak ada awalan /storage/, tapi diawali nama folder umum, berikan awalan standar /storage/emulated/0/
+                if (!cleanPath.startsWith('/storage/') && !cleanPath.startsWith('/sdcard/')) {
+                    if (/^(DCIM|Download|Movies|Pictures|WhatsApp|Telegram|Bluetooth)/i.test(cleanPath)) {
+                        cleanPath = '/storage/emulated/0/' + cleanPath;
+                    }
+                }
+
                 const lastSlash = cleanPath.lastIndexOf('/');
-                if (lastSlash > 10) { 
+                if (lastSlash > 5) { 
                     const folderPart = cleanPath.substring(0, lastSlash);
                     const filePart = cleanPath.substring(lastSlash + 1);
                     
                     document.getElementById('folderLocation').value = folderPart;
                     document.getElementById('fileNameInput').value = filePart;
                     
-                    statusBox.innerText = `✅ Berhasil! File '${filePart}' terdeteksi otomatis.`;
+                    statusBox.innerText = `✅ Berhasil! File '${filePart}' terdeteksi universal.`;
                     statusBox.style.color = "#3fb950";
                 } else {
-                    statusBox.innerText = "⚠️ Jalur terbaca, tapi nama file gagal dipisahkan.";
+                    statusBox.innerText = "⚠️ Teks terbaca, tapi gagal memisahkan folder dan file.";
                     statusBox.style.color = "#d29922";
                 }
             } else {
-                statusBox.innerText = "❌ Jalur penyimpanan tidak ditemukan di gambar screenshot.";
+                statusBox.innerText = "❌ Tidak ditemukan nama file video di screenshot. Pastikan rinciannya terlihat jelas!";
                 statusBox.style.color = "#fe2c55";
             }
         } catch (error) {
