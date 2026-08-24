@@ -171,7 +171,7 @@
         if (!input.files || input.files.length === 0) return;
         const statusBox = document.getElementById('ocrStatus');
         
-        statusBox.innerText = "⏳ AI sedang membaca screenshot rincian...";
+        statusBox.innerText = "⏳ AI sedang membaca (Mendukung Multibahasa)...";
         statusBox.style.color = "#58a6ff";
 
         try {
@@ -179,50 +179,71 @@
             const result = await Tesseract.recognize(image, 'eng');
             let text = result.data.text;
             
-            const keywords = ["Penyimpanan internal", "Internal storage", "/storage/"];
-            let startIndex = -1;
-            for (let kw of keywords) {
-                let idx = text.indexOf(kw);
-                if (idx !== -1) {
-                    startIndex = idx;
-                    break;
+            let filename = "";
+            let folder = "/storage/emulated/0"; // Fallback default
+            
+            const lines = text.split('\n');
+            const extRegex = /\.(mp4|mkv|avi|mov|webm|mp3|m4a|wav|aac|jpg|jpeg|png)$/i;
+            
+            // Regex pintar: menangkap nama file meskipun ada spasi, selama berakhiran ekstensi valid, membuang path absolut
+            const fileRegex = /[^\s/\\:*?"<>|]+(?: [^\s/\\:*?"<>|]+)*\.(?:mp4|mkv|avi|mov|webm|mp3|m4a|wav|aac|jpg|jpeg|png)/i;
+
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                
+                // 1. Ekstrak Nama File (jika belum ketemu)
+                if (!filename) {
+                    let fMatch = line.match(fileRegex);
+                    if (fMatch) {
+                        filename = fMatch[0].trim();
+                    }
+                }
+
+                // 2. Ekstrak Folder Path
+                // Skenario A: Tersedia path absolut lengkap seperti /storage/... atau /sdcard/...
+                if (line.match(/(?:\/storage\/|\/sdcard\/)/i)) {
+                    let pMatch = line.match(/(?:\/storage\/|\/sdcard\/)[^*?"<>|]+/i);
+                    if (pMatch) {
+                        let rawFolder = pMatch[0].trim();
+                        // Bersihkan jika nama file ikut terbawa di ujung path
+                        if (filename && rawFolder.endsWith(filename)) {
+                            rawFolder = rawFolder.slice(0, -(filename.length)).trim();
+                        }
+                        // Bersihkan slash paling belakang
+                        if (rawFolder.endsWith('/')) rawFolder = rawFolder.slice(0, -1);
+                        folder = rawFolder;
+                    }
+                } 
+                // Skenario B: Tersedia mode breadcrumbs khas UI android (misal: Bahasa Asing > DCIM > Camera)
+                else if (line.match(/(?:>|›|\/)\s*(DCIM|Movies|Download|Pictures|ScreenRecorder|Video|WhatsApp|Telegram|Android)/i)) {
+                    let parts = line.includes('>') ? line.split('>') : (line.includes('›') ? line.split('›') : line.split('/'));
+                    parts = parts.map(p => p.trim());
+                    
+                    let knownFolders = ['dcim', 'movies', 'download', 'pictures', 'screenrecorder', 'video', 'whatsapp', 'telegram', 'android'];
+                    let startIndex = parts.findIndex(p => knownFolders.includes(p.toLowerCase()));
+                    
+                    if (startIndex !== -1) {
+                        let validParts = parts.slice(startIndex);
+                        // Filter agar nama file tidak dianggap sebagai folder
+                        validParts = validParts.filter(p => !extRegex.test(p));
+                        if (validParts.length > 0) {
+                            folder = "/storage/emulated/0/" + validParts.join('/');
+                        }
+                    }
                 }
             }
             
-            if (startIndex !== -1) {
-                let subText = text.substring(startIndex, startIndex + 300);
-                let cleanPath = subText.replace(/[\r\n]+/g, "").trim();
-                
-                const extMatch = cleanPath.match(/^(.*?(\.[a-zA-Z0-9]{2,5}))(?:\s|$)/);
-                if (extMatch) {
-                    cleanPath = extMatch[1];
-                } else {
-                    let spaceIdx = cleanPath.indexOf(' ');
-                    if (spaceIdx !== -1) cleanPath = cleanPath.substring(0, spaceIdx);
-                }
-                
-                cleanPath = cleanPath.replace(/Penyimpanan internal/i, '/storage/emulated/0');
-                cleanPath = cleanPath.replace(/Internal storage/i, '/storage/emulated/0');
-                cleanPath = cleanPath.replace(/["'<>]/g, '');
-
-                const lastSlash = cleanPath.lastIndexOf('/');
-                if (lastSlash > 10) { 
-                    const folderPart = cleanPath.substring(0, lastSlash);
-                    const filePart = cleanPath.substring(lastSlash + 1);
-                    
-                    document.getElementById('folderLocation').value = folderPart;
-                    document.getElementById('fileNameInput').value = filePart;
-                    
-                    statusBox.innerText = `✅ Berhasil! File '${filePart}' terdeteksi otomatis.`;
-                    statusBox.style.color = "#3fb950";
-                } else {
-                    statusBox.innerText = "⚠️ Jalur terbaca, tapi nama file gagal dipisahkan.";
-                    statusBox.style.color = "#d29922";
-                }
+            if (filename) {
+                document.getElementById('fileNameInput').value = filename;
+                document.getElementById('folderLocation').value = folder;
+                statusBox.innerText = `✅ Berhasil! File '${filename}' terdeteksi otomatis.`;
+                statusBox.style.color = "#3fb950";
             } else {
-                statusBox.innerText = "❌ Jalur penyimpanan tidak ditemukan di gambar screenshot.";
-                statusBox.style.color = "#fe2c55";
+                statusBox.innerText = "⚠️ Nama file tidak ditemukan. Coba potong/crop gambar fokus ke area teks rincian.";
+                statusBox.style.color = "#d29922";
             }
+            
         } catch (error) {
             console.error(error);
             statusBox.innerText = "❌ Terjadi kesalahan mesin pemindai.";
