@@ -66,10 +66,10 @@
         <div class="guide-box">
             ⚠️ <strong>Syarat & Tata Cara (FFmpeg):</strong>
             <ol>
-                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install ffmpeg -y</code></li>
-                <li>Buka video di <strong>Galeri</strong> &rarr; Klik / ketuk ikon titik tiga (<strong>...</strong>) &rarr; Pilih <strong>Rincian</strong> &rarr; <em>Screenshot</em> layarnya.</li>
-                <li>Upload screenshot rincian itu ke kotak hijau di bawah (AI akan mendeteksi folder & nama file otomatis).</li>
-                <li>Klik <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> kodenya di Termux dan tekan Enter.</li>
+                <li><strong>Instalasi Termux:</strong> <code style="color: #7ee787;">pkg update && pkg install ffmpeg -y</code></li>
+                <li>Buka video di <strong>Galeri</strong> &rarr; Klik ikon titik tiga (<strong>...</strong>) &rarr; Pilih <strong>Rincian</strong> &rarr; <em>Screenshot</em>.</li>
+                <li>Upload screenshot ke kotak hijau di bawah (AI akan otomatis menyusun direktori).</li>
+                <li>Klik <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> di Termux.</li>
             </ol>
         </div>
 
@@ -90,7 +90,7 @@
 
         <div class="input-group">
             <label>Folder Lokasi:</label>
-            <input type="text" id="folderLocation" value="/storage/emulated/0/DCIM/ScreenRecorder">
+            <input type="text" id="folderLocation" value="/storage/emulated/0/">
         </div>
         
         <div class="input-group">
@@ -171,7 +171,7 @@
         if (!input.files || input.files.length === 0) return;
         const statusBox = document.getElementById('ocrStatus');
         
-        statusBox.innerText = "⏳ AI sedang membaca (Mendukung Multibahasa)...";
+        statusBox.innerText = "⏳ AI sedang membedah struktur file & folder...";
         statusBox.style.color = "#58a6ff";
 
         try {
@@ -180,73 +180,89 @@
             let text = result.data.text;
             
             let filename = "";
-            let folder = "/storage/emulated/0"; // Fallback default
+            let folder = ""; 
             
-            const lines = text.split('\n');
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
             const extRegex = /\.(mp4|mkv|avi|mov|webm|mp3|m4a|wav|aac|jpg|jpeg|png)$/i;
-            
-            // Regex pintar: menangkap nama file meskipun ada spasi, selama berakhiran ekstensi valid, membuang path absolut
             const fileRegex = /[^\s/\\:*?"<>|]+(?: [^\s/\\:*?"<>|]+)*\.(?:mp4|mkv|avi|mov|webm|mp3|m4a|wav|aac|jpg|jpeg|png)/i;
 
+            // 1. Ekstrak Nama File
             for (let line of lines) {
-                line = line.trim();
-                if (!line) continue;
-                
-                // 1. Ekstrak Nama File (jika belum ketemu)
-                if (!filename) {
-                    let fMatch = line.match(fileRegex);
-                    if (fMatch) {
-                        filename = fMatch[0].trim();
-                    }
+                let fMatch = line.match(fileRegex);
+                if (fMatch && !filename) {
+                    filename = fMatch[0].trim();
                 }
+            }
 
-                // 2. Ekstrak Folder Path
-                // Skenario A: Tersedia path absolut lengkap seperti /storage/... atau /sdcard/...
-                if (line.match(/(?:\/storage\/|\/sdcard\/)/i)) {
-                    let pMatch = line.match(/(?:\/storage\/|\/sdcard\/)[^*?"<>|]+/i);
-                    if (pMatch) {
-                        let rawFolder = pMatch[0].trim();
-                        // Bersihkan jika nama file ikut terbawa di ujung path
-                        if (filename && rawFolder.endsWith(filename)) {
-                            rawFolder = rawFolder.slice(0, -(filename.length)).trim();
-                        }
-                        // Bersihkan slash paling belakang
-                        if (rawFolder.endsWith('/')) rawFolder = rawFolder.slice(0, -1);
-                        folder = rawFolder;
+            // 2. Ekstrak Folder Path (Agresif Skenario A: Absolute Path)
+            for (let line of lines) {
+                let pMatch = line.match(/(?:\/storage\/|\/sdcard\/)[^\s*?"<>|]+/i);
+                if (pMatch && !folder) {
+                    let rawFolder = pMatch[0].trim();
+                    if (filename && rawFolder.endsWith(filename)) {
+                        rawFolder = rawFolder.slice(0, -(filename.length)).trim();
                     }
-                } 
-                // Skenario B: Tersedia mode breadcrumbs khas UI android (misal: Bahasa Asing > DCIM > Camera)
-                else if (line.match(/(?:>|›|\/)\s*(DCIM|Movies|Download|Pictures|ScreenRecorder|Video|WhatsApp|Telegram|Android)/i)) {
-                    let parts = line.includes('>') ? line.split('>') : (line.includes('›') ? line.split('›') : line.split('/'));
-                    parts = parts.map(p => p.trim());
-                    
-                    let knownFolders = ['dcim', 'movies', 'download', 'pictures', 'screenrecorder', 'video', 'whatsapp', 'telegram', 'android'];
-                    let startIndex = parts.findIndex(p => knownFolders.includes(p.toLowerCase()));
-                    
-                    if (startIndex !== -1) {
-                        let validParts = parts.slice(startIndex);
-                        // Filter agar nama file tidak dianggap sebagai folder
-                        validParts = validParts.filter(p => !extRegex.test(p));
-                        if (validParts.length > 0) {
-                            folder = "/storage/emulated/0/" + validParts.join('/');
+                    if (rawFolder.endsWith('/')) rawFolder = rawFolder.slice(0, -1);
+                    folder = rawFolder;
+                }
+            }
+
+            // 3. Ekstrak Folder Path (Agresif Skenario B: Breadcrumbs "Internal > DCIM > Camera")
+            if (!folder) {
+                for (let line of lines) {
+                    if (line.match(/[>›]| \/ /)) {
+                        let parts = line.split(/[>›]|\//).map(p => p.trim()).filter(p => p.length > 0);
+                        
+                        const rootAliases = ['internal', 'penyimpanan', 'storage', 'sdcard', 'memori', 'phone', 'telepon', 'perangkat', 'device'];
+                        let validPathParts = [];
+                        let startRecording = false;
+
+                        for (let i = 0; i < parts.length; i++) {
+                            let partLower = parts[i].toLowerCase();
+                            
+                            // Deteksi kata "Root" storage apa pun bahasanya
+                            if (rootAliases.some(alias => partLower.includes(alias))) {
+                                startRecording = true;
+                                continue; 
+                            }
+                            
+                            // Fallback jika root tidak ada, langsung deteksi folder mainstream
+                            const knownFolders = ['dcim', 'movies', 'download', 'pictures', 'screenrecorder', 'video', 'whatsapp', 'telegram', 'android', 'snaptik', 'tiktok', 'capcut', 'camera'];
+                            if (!startRecording && knownFolders.some(kf => partLower.includes(kf))) {
+                                startRecording = true;
+                            }
+
+                            if (startRecording && !extRegex.test(parts[i])) {
+                                // Sanitasi: Hapus karakter aneh hasil kesalahan OCR
+                                let cleanPart = parts[i].replace(/[^a-zA-Z0-9_\- ]/g, '').trim();
+                                if(cleanPart) validPathParts.push(cleanPart);
+                            }
+                        }
+
+                        if (validPathParts.length > 0) {
+                            folder = "/storage/emulated/0/" + validPathParts.join('/');
+                            break;
                         }
                     }
                 }
             }
             
+            // 4. Default Fallback
+            if (!folder) folder = "/storage/emulated/0";
+
             if (filename) {
                 document.getElementById('fileNameInput').value = filename;
                 document.getElementById('folderLocation').value = folder;
-                statusBox.innerText = `✅ Berhasil! File '${filename}' terdeteksi otomatis.`;
+                statusBox.innerText = `✅ File: '${filename}' | Path: Agresif Terdeteksi!`;
                 statusBox.style.color = "#3fb950";
             } else {
-                statusBox.innerText = "⚠️ Nama file tidak ditemukan. Coba potong/crop gambar fokus ke area teks rincian.";
+                statusBox.innerText = "⚠️ Nama file tidak ditemukan. Coba potong/crop gambar pada area nama & lokasi file.";
                 statusBox.style.color = "#d29922";
             }
             
         } catch (error) {
             console.error(error);
-            statusBox.innerText = "❌ Terjadi kesalahan mesin pemindai.";
+            statusBox.innerText = "❌ Terjadi kesalahan mesin OCR.";
             statusBox.style.color = "#fe2c55";
         }
     }
@@ -264,13 +280,18 @@
 
     function generateFFmpeg() {
         const action = document.getElementById('ffAction').value;
-        const folderLocation = document.getElementById('folderLocation').value.trim();
+        let folderLocation = document.getElementById('folderLocation').value.trim();
         const inputName = document.getElementById('fileNameInput').value.trim();
         const output = document.getElementById('ffOutput').value.trim() || 'hasil_proses.mp4';
         
         if (!inputName) {
             alert("Harap masukkan nama file input atau upload screenshot terlebih dahulu!");
             return;
+        }
+
+        // Sanitasi spasi pada direktori (hindari error cd Termux)
+        if (folderLocation.includes(" ")) {
+            folderLocation = `"${folderLocation}"`;
         }
 
         let ffmpegCmd = '';
@@ -285,7 +306,7 @@
             ffmpegCmd = `ffmpeg -i "${inputName}" -ss ${start} -to ${end} -c copy "${output}"`;
         }
         
-        const finalCmd = `cd "${folderLocation}" && ${ffmpegCmd}`;
+        const finalCmd = `cd ${folderLocation} && ${ffmpegCmd}`;
         setOutputAndCopy(finalCmd);
     }
 
