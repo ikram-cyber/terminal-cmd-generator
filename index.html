@@ -59,9 +59,6 @@
     
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('ffmpeg')">FFmpeg</button>
-        <button class="tab-btn" onclick="switchTab('ytdlp')">yt-dlp</button>
-        <button class="tab-btn" onclick="switchTab('git')">Git</button>
-        <button class="tab-btn" onclick="switchTab('python')">Python</button>
     </div>
 
     <!-- TAB: FFMPEG -->
@@ -110,85 +107,6 @@
             <input type="text" id="ffTime" placeholder="00:00:10 - 00:00:30">
         </div>
         <button class="action-btn" onclick="generateFFmpeg()">GENERATE & COPY</button>
-    </div>
-
-    <!-- TAB: YT-DLP -->
-    <div id="ytdlp" class="tab-content">
-        <div class="guide-box" style="border-left-color: #238636;">
-            📥 <strong>Tata Cara (yt-dlp - Download Video):</strong>
-            <ol>
-                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install python ffmpeg -y && pip install yt-dlp</code></li>
-                <li>Salin link video dari YouTube / TikTok.</li>
-                <li>Tempel link pada kolom di bawah ini.</li>
-                <li>Klik <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> di Termux. Hasil tersimpan di folder Download.</li>
-            </ol>
-        </div>
-        <div class="input-group">
-            <label>Pilih Aksi:</label>
-            <select id="ytAction">
-                <option value="full">Download Full Video</option>
-                <option value="clip">Potong Video Online</option>
-            </select>
-        </div>
-        <div class="input-group">
-            <label>Link Video (YouTube/TikTok):</label>
-            <input type="text" id="ytInput" placeholder="https://www.youtube.com/watch?v=...">
-        </div>
-        <div class="input-group" id="ytTimeGroup" style="display:none;">
-            <label>Waktu Potong:</label>
-            <input type="text" id="ytTime" placeholder="00:15:00 - 00:15:30">
-        </div>
-        <button class="action-btn" onclick="generateYtdlp()">GENERATE & COPY</button>
-    </div>
-
-    <!-- TAB: GIT -->
-    <div id="git" class="tab-content">
-        <div class="guide-box" style="border-left-color: #1f6feb;">
-            🐙 <strong>Tata Cara (Git - GitHub Version Control):</strong>
-            <ol>
-                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install git -y</code></li>
-                <li>Untuk <em>Push</em>: Pastikan Termux sudah masuk ke folder *project* kamu (`cd folder-project`).</li>
-                <li>Untuk <em>Clone</em>: Cukup masukkan URL repository GitHub.</li>
-                <li>Klik <strong>GENERATE & COPY</strong> dan <em>Paste</em> di Termux.</li>
-            </ol>
-        </div>
-        <div class="input-group">
-            <label>Pilih Aksi:</label>
-            <select id="gitAction">
-                <option value="push">Full Commit & Push</option>
-                <option value="clone">Clone Repository</option>
-            </select>
-        </div>
-        <div class="input-group">
-            <label>URL / Pesan Commit:</label>
-            <input type="text" id="gitInput" value="feat: update script">
-        </div>
-        <button class="action-btn" onclick="generateGit()">GENERATE & COPY</button>
-    </div>
-
-    <!-- TAB: PYTHON -->
-    <div id="python" class="tab-content">
-        <div class="guide-box" style="border-left-color: #d29922;">
-            🐍 <strong>Tata Cara (Python Script Runner):</strong>
-            <ol>
-                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install python -y</code></li>
-                <li>Masukkan nama file *script* Python kamu (misal: `main.py`).</li>
-                <li>Pilih apakah ingin membuat *Virtual Environment* atau langsung menjalankannya di latar belakang (`nohup`).</li>
-                <li>Klik <strong>GENERATE & COPY</strong> dan <em>Paste</em> di Termux.</li>
-            </ol>
-        </div>
-        <div class="input-group">
-            <label>Pilih Aksi:</label>
-            <select id="pyAction">
-                <option value="venv">Buat Virtual Env</option>
-                <option value="run">Jalankan Script (Nohup)</option>
-            </select>
-        </div>
-        <div class="input-group">
-            <label>Nama Script / Folder:</label>
-            <input type="text" id="pyInput" value="main.py">
-        </div>
-        <button class="action-btn" onclick="generatePython()">GENERATE & COPY</button>
     </div>
 
     <div class="output-wrapper">
@@ -247,9 +165,6 @@
 
     document.getElementById('ffAction').addEventListener('change', function() {
         document.getElementById('ffTimeGroup').style.display = (this.value === 'cut') ? 'block' : 'none';
-    });
-    document.getElementById('ytAction').addEventListener('change', function() {
-        document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
     async function processScreenshot(input) {
@@ -351,32 +266,6 @@
         
         const finalCmd = `cd "${folderLocation}" && ${ffmpegCmd}`;
         setOutputAndCopy(finalCmd);
-    }
-
-    function generateYtdlp() {
-        const action = document.getElementById('ytAction').value;
-        const input = document.getElementById('ytInput').value || 'LINK_VIDEO';
-        let cmd = '';
-        if (action === 'full') cmd = `yt-dlp "${input}"`;
-        else if (action === 'clip') {
-            const time = document.getElementById('ytTime').value.split('-');
-            const start = time[0] ? time[0].trim() : '00:00:00';
-            const end = time[1] ? time[1].trim() : '00:00:30';
-            cmd = `yt-dlp --download-sections "*${start}-${end}" "${input}"`;
-        }
-        setOutputAndCopy(`cd /storage/emulated/0/Download && ${cmd}`);
-    }
-
-    function generateGit() {
-        const action = document.getElementById('gitAction').value;
-        const input = document.getElementById('gitInput').value;
-        setOutputAndCopy(action === 'push' ? `git add .\ngit commit -m "${input}"\ngit push` : `git clone ${input}`);
-    }
-
-    function generatePython() {
-        const action = document.getElementById('pyAction').value;
-        const input = document.getElementById('pyInput').value;
-        setOutputAndCopy(action === 'venv' ? `python -m venv ${input}\nsource ${input}/bin/activate` : `nohup python ${input} > output.log 2>&1 &`);
     }
 
     function copyCommand() {
