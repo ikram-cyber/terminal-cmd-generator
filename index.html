@@ -18,34 +18,41 @@
         p { color: #8b949e; font-size: 14px; margin-bottom: 25px; }
         
         .upload-box { border: 2px dashed #30363d; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #010409; }
-        input[type="file"] { width: 100%; color: #c9d1d9; }
+        input[type="file"] { width: 100%; color: #c9d1d9; font-family: monospace; }
         
-        select { width: 100%; padding: 12px; background: #21262d; border: 1px solid #30363d; color: white; border-radius: 6px; margin-bottom: 20px; font-size: 15px; outline: none; }
+        select, input[type="text"] { width: 100%; box-sizing: border-box; padding: 12px; background: #21262d; border: 1px solid #30363d; color: white; border-radius: 6px; margin-bottom: 15px; font-size: 15px; outline: none; }
+        select:focus, input[type="text"]:focus { border-color: #3fb950; }
         
-        button { background: #238636; color: white; border: none; padding: 15px; width: 100%; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        button { background: #238636; color: white; border: none; padding: 15px; width: 100%; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
         button:hover { background: #2ea043; }
         button:disabled { background: #1a5c27; cursor: not-allowed; color: #8b949e; }
         
-        #logConsole { background: #000; color: #3fb950; padding: 15px; border-radius: 6px; border: 1px solid #30363d; margin-top: 20px; font-family: monospace; font-size: 13px; text-align: left; height: 100px; overflow-y: auto; display: none; }
+        #logConsole { background: #000; color: #3fb950; padding: 15px; border-radius: 6px; border: 1px solid #30363d; margin-top: 20px; font-family: monospace; font-size: 13px; text-align: left; height: 120px; overflow-y: auto; display: none; }
         
-        #downloadBtn { display: none; background: #1f6feb; margin-top: 15px; text-decoration: none; padding: 15px; border-radius: 6px; font-weight: bold; color: white; }
+        #downloadBtn { display: none; background: #1f6feb; text-decoration: none; padding: 15px; border-radius: 6px; font-weight: bold; color: white; margin-top: 15px; }
         #downloadBtn:hover { background: #388bfd; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🎥 Web Video Processor</h2>
-    <p>Proses video 100% di HP kamu tanpa upload ke server luar.</p>
+    <h2>🎥 Web Video Editor</h2>
+    <p>Proses video langsung di browser tanpa Termux!</p>
     
     <div class="upload-box">
         <input type="file" id="videoFile" accept="video/mp4,video/x-m4v,video/*">
     </div>
     
     <select id="actionType">
-        <option value="compress">Kompres Video (Kecilkan Ukuran)</option>
-        <option value="extract">Ekstrak Audio (Jadikan MP3)</option>
+        <option value="compress">1. Kompres Video (Kecilkan Ukuran)</option>
+        <option value="extract">2. Ekstrak Audio (Jadikan MP3)</option>
+        <option value="cut">3. Potong Video (Clipper)</option>
     </select>
+    
+    <!-- Kolom input waktu ini hanya akan muncul kalau tab "Potong Video" dipilih -->
+    <div id="timeGroup" style="display:none;">
+        <input type="text" id="timeInput" placeholder="Mulai - Selesai (contoh: 00:00:10 - 00:00:30)">
+    </div>
     
     <button id="processBtn" onclick="processMedia()">Mulai Proses</button>
     
@@ -55,8 +62,12 @@
 </div>
 
 <script>
+    // Memunculkan kolom waktu khusus untuk aksi Potong Video
+    document.getElementById('actionType').addEventListener('change', function() {
+        document.getElementById('timeGroup').style.display = (this.value === 'cut') ? 'block' : 'none';
+    });
+
     const { createFFmpeg, fetchFile } = FFmpeg;
-    // Menginisialisasi FFmpeg
     const ffmpeg = createFFmpeg({ 
         log: true,
         corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
@@ -82,9 +93,8 @@
         const file = fileInput.files[0];
         const action = document.getElementById('actionType').value;
         
-        // Cek ukuran file (Maksimal 100MB agar browser tidak crash)
-        if (file.size > 100 * 1024 * 1024) {
-            alert('File terlalu besar! Maksimal 100MB agar HP kamu tidak crash.');
+        if (file.size > 150 * 1024 * 1024) {
+            alert('File terlalu besar! Maksimal 150MB agar browser tidak force close.');
             return;
         }
 
@@ -93,12 +103,12 @@
         logConsole.innerHTML = '';
 
         try {
-            updateLog('Mengunduh mesin FFmpeg ke browser (Mungkin butuh waktu)...');
+            updateLog('Menyiapkan mesin FFmpeg di browser...');
             if (!ffmpeg.isLoaded()) {
                 await ffmpeg.load();
             }
 
-            updateLog('Membaca file video ke dalam memori...');
+            updateLog('Membaca video ke dalam memori sementara...');
             ffmpeg.FS('writeFile', 'input_video', await fetchFile(file));
 
             updateLog('Sedang memproses... JANGAN TUTUP TAB INI!');
@@ -113,21 +123,28 @@
             let outName = '';
             let outType = '';
 
-            // Eksekusi proses nyata di dalam browser
             if (action === 'compress') {
-                outName = 'hasil.mp4';
+                outName = 'hasil_kompres.mp4';
                 outType = 'video/mp4';
-                // Render kompresi (fast preset agar tidak hang)
                 await ffmpeg.run('-i', 'input_video', '-vcodec', 'libx264', '-crf', '28', '-preset', 'ultrafast', outName);
-            } else if (action === 'extract') {
-                outName = 'hasil.mp3';
+            } 
+            else if (action === 'extract') {
+                outName = 'hasil_audio.mp3';
                 outType = 'audio/mp3';
                 await ffmpeg.run('-i', 'input_video', '-q:a', '0', '-map', 'a', outName);
+            } 
+            else if (action === 'cut') {
+                outName = 'hasil_potong.mp4';
+                outType = 'video/mp4';
+                const timeVal = document.getElementById('timeInput').value.split('-');
+                const start = timeVal[0] ? timeVal[0].trim() : '00:00:00';
+                const end = timeVal[1] ? timeVal[1].trim() : '00:00:30';
+                // -c copy memotong video dengan kecepatan kilat tanpa render ulang
+                await ffmpeg.run('-i', 'input_video', '-ss', start, '-to', end, '-c', 'copy', outName);
             }
 
             updateLog('Proses selesai! Menyiapkan file untuk diunduh...');
             
-            // Mengambil hasil dari memori FFmpeg
             const data = ffmpeg.FS('readFile', outName);
             const url = URL.createObjectURL(new Blob([data.buffer], { type: outType }));
 
@@ -137,7 +154,7 @@
             updateLog('Sukses!');
 
         } catch (error) {
-            updateLog('ERROR: Gagal memproses. Silakan refresh halaman.');
+            updateLog('ERROR: Gagal memproses. Pastikan format didukung.');
             console.error(error);
         } finally {
             processBtn.disabled = false;
