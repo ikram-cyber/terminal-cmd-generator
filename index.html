@@ -25,12 +25,12 @@
         .tab-content.active { display: block; }
         
         .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #8b949e; font-size: 14px; }
+        label { display: block; margin-bottom: 5px; color: #8b949e; font-size: 14px; font-weight: bold; }
         input[type="text"], select, input[type="file"] { width: 100%; box-sizing: border-box; padding: 10px; background: #010409; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; font-family: 'Courier New', monospace; outline: none; }
         input:focus, select:focus { border-color: #58a6ff; }
         input[type="file"] { background: #21262d; padding: 8px; cursor: pointer; }
         
-        #ocrBox { display: none; background: #111a14; padding: 15px; border-radius: 6px; margin-top: 10px; border: 1px dashed #3fb950; }
+        #ocrBox { display: block; background: #111a14; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px dashed #3fb950; }
         #ocrStatus { font-size: 13px; margin-top: 8px; font-weight: bold; }
         
         .output-wrapper { position: relative; margin-top: 25px; }
@@ -58,48 +58,40 @@
     <!-- TAB: FFMPEG -->
     <div id="ffmpeg" class="tab-content active">
         <div class="input-group">
-            <label>Pilih Aksi:</label>
+            <label>1. Pilih Aksi:</label>
             <select id="ffAction">
-                <option value="compress">1. Kompres Video (H.265)</option>
-                <option value="extract">2. Ekstrak Audio (MP3)</option>
-                <option value="cut">3. Potong Video (Cut)</option>
+                <option value="compress">Kompres Video (H.265)</option>
+                <option value="extract">Ekstrak Audio (MP3)</option>
+                <option value="cut">Potong Video (Cut)</option>
             </select>
         </div>
         
-        <div class="input-group">
-            <label>Pilih File Video di HP (Untuk Nama):</label>
-            <input type="file" id="filePicker" accept="video/*">
+        <!-- Fitur AI OCR Ditaruh Paling Atas -->
+        <div id="ocrBox">
+            <label style="color: #3fb950;">📸 2. Upload Screenshot Rincian File (AI Auto-Fill):</label>
+            <input type="file" id="screenshotPicker" accept="image/*" onchange="processScreenshot(this)">
+            <div id="ocrStatus">Masukkan gambar rincian untuk mendeteksi folder & nama file otomatis.</div>
         </div>
 
         <div class="input-group">
-            <label>Lokasi Folder (Agar Termux tidak nyasar):</label>
-            <select id="folderLocation" onchange="toggleCustomFolder()">
-                <option value="/storage/emulated/0/DCIM/ScreenRecorder">Folder ScreenRecorder (DCIM)</option>
-                <option value="/storage/emulated/0/ScreenRecorder">Folder ScreenRecorder (Luar)</option>
-                <option value="/storage/emulated/0/Download">Folder Download</option>
-                <option value="/storage/emulated/0/Movies">Folder Movies</option>
-                <option value="custom">⚙️ Ketik Lokasi Sendiri (Atau dari Screenshot)</option>
-            </select>
-            
-            <input type="text" id="customFolderInput" placeholder="Contoh: /storage/emulated/0/WhatsApp/Media" style="display:none; margin-top:10px;">
-            
-            <!-- Fitur AI OCR -->
-            <div id="ocrBox">
-                <label style="color: #3fb950;">📸 Upload Screenshot Rincian File:</label>
-                <input type="file" id="screenshotPicker" accept="image/*" onchange="processScreenshot(this)">
-                <div id="ocrStatus"></div>
-            </div>
+            <label>Atau Ketik Manual Folder Lokasi:</label>
+            <input type="text" id="folderLocation" value="/storage/emulated/0/DCIM/ScreenRecorder">
+        </div>
+        
+        <div class="input-group">
+            <label>Atau Ketik Manual Nama File Input:</label>
+            <input type="text" id="fileNameInput" placeholder="Contoh: video.mp4">
         </div>
 
         <div class="input-group">
-            <label>Nama File Output (contoh: hasil.mp4):</label>
+            <label>3. Nama File Output (contoh: hasil.mp4):</label>
             <input type="text" id="ffOutput" value="hasil_proses.mp4">
         </div>
         <div class="input-group" id="ffTimeGroup" style="display:none;">
             <label>Waktu (Format HH:MM:SS):</label>
             <input type="text" id="ffTime" placeholder="Mulai - Selesai (00:00:10 - 00:00:30)">
         </div>
-        <button class="action-btn" onclick="generateFFmpeg()">Generate Command</button>
+        <button class="action-btn" onclick="generateFFmpeg()">GENERATE & COPY</button>
     </div>
 
     <!-- TAB: YT-DLP, GIT, PYTHON -->
@@ -107,24 +99,24 @@
         <div class="input-group"><label>Pilih Aksi:</label><select id="ytAction"><option value="full">Download Full Video</option><option value="clip">Potong Video Online</option></select></div>
         <div class="input-group"><label>Link Video:</label><input type="text" id="ytInput" placeholder="https://www.youtube.com/..."></div>
         <div class="input-group" id="ytTimeGroup" style="display:none;"><label>Waktu:</label><input type="text" id="ytTime" placeholder="00:15:00 - 00:15:30"></div>
-        <button class="action-btn" onclick="generateYtdlp()">Generate Command</button>
+        <button class="action-btn" onclick="generateYtdlp()">GENERATE & COPY</button>
     </div>
 
     <div id="git" class="tab-content">
         <div class="input-group"><label>Pilih Aksi:</label><select id="gitAction"><option value="push">Full Commit & Push</option><option value="clone">Clone Repository</option></select></div>
         <div class="input-group"><label>URL/Pesan:</label><input type="text" id="gitInput" value="feat: update script"></div>
-        <button class="action-btn" onclick="generateGit()">Generate Command</button>
+        <button class="action-btn" onclick="generateGit()">GENERATE & COPY</button>
     </div>
 
     <div id="python" class="tab-content">
         <div class="input-group"><label>Pilih Aksi:</label><select id="pyAction"><option value="venv">Buat Virtual Env</option><option value="run">Jalankan Script (Nohup)</option></select></div>
         <div class="input-group"><label>Input:</label><input type="text" id="pyInput" value="main.py"></div>
-        <button class="action-btn" onclick="generatePython()">Generate Command</button>
+        <button class="action-btn" onclick="generatePython()">GENERATE & COPY</button>
     </div>
 
     <div class="output-wrapper">
-        <button id="copyBtn" class="copy-btn" onclick="copyCommand()">Copy</button>
-        <div class="output-box" id="cmdOutput">Pilih tab, isi data, dan klik Generate...</div>
+        <button id="copyBtn" class="copy-btn" onclick="copyCommand()">Copy Manual</button>
+        <div class="output-box" id="cmdOutput">Hasil racikan akan muncul di sini...</div>
     </div>
 </div>
 
@@ -143,18 +135,12 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
-    function toggleCustomFolder() {
-        const val = document.getElementById('folderLocation').value;
-        document.getElementById('customFolderInput').style.display = (val === 'custom') ? 'block' : 'none';
-        document.getElementById('ocrBox').style.display = (val === 'custom') ? 'block' : 'none';
-    }
-
-    // FUNGSI AI MEMBACA SCREENSHOT (DIUPDATE AGAR PAHAM BAHASA INDONESIA)
+    // FUNGSI AI MEMBACA SCREENSHOT (BISA DETEKSI FOLDER & NAMA FILE SEKALIGUS)
     async function processScreenshot(input) {
         if (!input.files || input.files.length === 0) return;
         const statusBox = document.getElementById('ocrStatus');
         
-        statusBox.innerText = "⏳ Mesin AI sedang membaca teks gambar... (Tunggu sebentar)";
+        statusBox.innerText = "⏳ AI sedang membaca gambar... (Tunggu sebentar)";
         statusBox.style.color = "#58a6ff";
 
         try {
@@ -162,24 +148,29 @@
             const result = await Tesseract.recognize(image, 'eng');
             let text = result.data.text;
             
-            // AI kini mencari teks "/storage/", ATAU "Penyimpanan internal/", ATAU "Internal storage/"
             const match = text.match(/(?:\/storage\/|Penyimpanan internal\/|Internal storage\/)[^\s\n]+/i);
             
             if (match) {
-                let extractedPath = match[0];
+                let fullPath = match[0].trim();
                 
-                // Terjemahkan bahasa HP (Penyimpanan internal) menjadi bahasa Termux (/storage/emulated/0)
-                extractedPath = extractedPath.replace(/Penyimpanan internal/i, '/storage/emulated/0');
-                extractedPath = extractedPath.replace(/Internal storage/i, '/storage/emulated/0');
+                // Terjemahkan ke bahasa Termux
+                fullPath = fullPath.replace(/Penyimpanan internal/i, '/storage/emulated/0');
+                fullPath = fullPath.replace(/Internal storage/i, '/storage/emulated/0');
                 
-                // Memotong nama file di belakang agar menyisakan foldernya saja
-                const lastSlash = extractedPath.lastIndexOf('/');
+                const lastSlash = fullPath.lastIndexOf('/');
+                let folderPart = fullPath;
+                let filePart = "";
+
                 if (lastSlash > 10) { 
-                    extractedPath = extractedPath.substring(0, lastSlash);
+                    folderPart = fullPath.substring(0, lastSlash);
+                    filePart = fullPath.substring(lastSlash + 1);
                 }
                 
-                document.getElementById('customFolderInput').value = extractedPath;
-                statusBox.innerText = "✅ Alamat berhasil dibaca dan disalin otomatis!";
+                // Otomatis mengisi dua kolom sekaligus!
+                document.getElementById('folderLocation').value = folderPart;
+                document.getElementById('fileNameInput').value = filePart;
+                
+                statusBox.innerText = `✅ Sukses! Folder dan File (${filePart}) berhasil disalin.`;
                 statusBox.style.color = "#3fb950";
             } else {
                 statusBox.innerText = "❌ Jalur lokasi tidak ditemukan di gambar.";
@@ -192,31 +183,25 @@
         }
     }
 
-    function setOutput(cmd) {
-        document.getElementById('cmdOutput').innerText = cmd;
+    function setOutputAndCopy(cmd) {
+        const outputBox = document.getElementById('cmdOutput');
+        outputBox.innerText = cmd;
         document.getElementById('copyBtn').style.display = 'block';
+        
+        navigator.clipboard.writeText(cmd).then(() => {
+            outputBox.style.borderColor = "#1f6feb";
+            setTimeout(() => { outputBox.style.borderColor = "#3fb950"; }, 500);
+        });
     }
 
     function generateFFmpeg() {
         const action = document.getElementById('ffAction').value;
-        const filePicker = document.getElementById('filePicker');
-        let folderLocation = document.getElementById('folderLocation').value;
+        const folderLocation = document.getElementById('folderLocation').value.trim();
+        const inputName = document.getElementById('fileNameInput').value.trim();
+        const output = document.getElementById('ffOutput').value.trim() || 'hasil_proses.mp4';
         
-        if (folderLocation === 'custom') {
-            folderLocation = document.getElementById('customFolderInput').value;
-            if (!folderLocation) {
-                alert("Harap ketik lokasi atau scan screenshot!");
-                return;
-            }
-        }
-
-        const output = document.getElementById('ffOutput').value || 'hasil_proses.mp4';
-        
-        let inputName = 'input.mp4';
-        if (filePicker.files.length > 0) {
-            inputName = filePicker.files[0].name;
-        } else {
-            alert("Harap pilih file video terlebih dahulu!");
+        if (!inputName) {
+            alert("Harap masukkan nama file input, atau upload screenshot!");
             return;
         }
 
@@ -233,7 +218,7 @@
         }
         
         const finalCmd = `cd "${folderLocation}" && ${ffmpegCmd}`;
-        setOutput(finalCmd);
+        setOutputAndCopy(finalCmd);
     }
 
     function generateYtdlp() {
@@ -247,19 +232,19 @@
             const end = time[1] ? time[1].trim() : '00:00:30';
             cmd = `yt-dlp --download-sections "*${start}-${end}" "${input}"`;
         }
-        setOutput(`cd /storage/emulated/0/Download && ${cmd}`);
+        setOutputAndCopy(`cd /storage/emulated/0/Download && ${cmd}`);
     }
 
     function generateGit() {
         const action = document.getElementById('gitAction').value;
         const input = document.getElementById('gitInput').value;
-        setOutput(action === 'push' ? `git add .\ngit commit -m "${input}"\ngit push` : `git clone ${input}`);
+        setOutputAndCopy(action === 'push' ? `git add .\ngit commit -m "${input}"\ngit push` : `git clone ${input}`);
     }
 
     function generatePython() {
         const action = document.getElementById('pyAction').value;
         const input = document.getElementById('pyInput').value;
-        setOutput(action === 'venv' ? `python -m venv ${input}\nsource ${input}/bin/activate` : `nohup python ${input} > output.log 2>&1 &`);
+        setOutputAndCopy(action === 'venv' ? `python -m venv ${input}\nsource ${input}/bin/activate` : `nohup python ${input} > output.log 2>&1 &`);
     }
 
     function copyCommand() {
@@ -267,8 +252,7 @@
         navigator.clipboard.writeText(text).then(() => {
             const btn = document.getElementById('copyBtn');
             btn.innerText = "Tersalin!";
-            btn.style.background = "#238636";
-            setTimeout(() => { btn.innerText = "Copy"; btn.style.background = "#1f6feb"; }, 2000);
+            setTimeout(() => { btn.innerText = "Copy Manual"; }, 2000);
         });
     }
 </script>
