@@ -8,7 +8,7 @@
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4659624818164596" crossorigin="anonymous"></script>
 
-    <!-- Library OCR Tesseract.js untuk membaca gambar -->
+    <!-- Library OCR Tesseract.js -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
     <style>
@@ -30,7 +30,6 @@
         input:focus, select:focus { border-color: #58a6ff; }
         input[type="file"] { background: #21262d; padding: 8px; cursor: pointer; }
         
-        /* Area khusus Scanner OCR */
         #ocrBox { display: none; background: #111a14; padding: 15px; border-radius: 6px; margin-top: 10px; border: 1px dashed #3fb950; }
         #ocrStatus { font-size: 13px; margin-top: 8px; font-weight: bold; }
         
@@ -86,7 +85,7 @@
             
             <!-- Fitur AI OCR -->
             <div id="ocrBox">
-                <label style="color: #3fb950;">📸 Malas ngetik? Upload Screenshot Rincian File:</label>
+                <label style="color: #3fb950;">📸 Upload Screenshot Rincian File:</label>
                 <input type="file" id="screenshotPicker" accept="image/*" onchange="processScreenshot(this)">
                 <div id="ocrStatus"></div>
             </div>
@@ -144,14 +143,13 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
-    // Menampilkan kotak custom dan scanner OCR
     function toggleCustomFolder() {
         const val = document.getElementById('folderLocation').value;
         document.getElementById('customFolderInput').style.display = (val === 'custom') ? 'block' : 'none';
         document.getElementById('ocrBox').style.display = (val === 'custom') ? 'block' : 'none';
     }
 
-    // FUNGSI AI MEMBACA SCREENSHOT
+    // FUNGSI AI MEMBACA SCREENSHOT (DIUPDATE AGAR PAHAM BAHASA INDONESIA)
     async function processScreenshot(input) {
         if (!input.files || input.files.length === 0) return;
         const statusBox = document.getElementById('ocrStatus');
@@ -162,24 +160,29 @@
         try {
             const image = input.files[0];
             const result = await Tesseract.recognize(image, 'eng');
-            const text = result.data.text;
+            let text = result.data.text;
             
-            // AI mencari teks yang diawali dengan /storage/
-            const match = text.match(/\/storage\/[^\s\n]+/i);
+            // AI kini mencari teks "/storage/", ATAU "Penyimpanan internal/", ATAU "Internal storage/"
+            const match = text.match(/(?:\/storage\/|Penyimpanan internal\/|Internal storage\/)[^\s\n]+/i);
             
             if (match) {
                 let extractedPath = match[0];
-                // Memotong nama file di belakang (Ikram.mp4) agar menyisakan jalur foldernya saja
+                
+                // Terjemahkan bahasa HP (Penyimpanan internal) menjadi bahasa Termux (/storage/emulated/0)
+                extractedPath = extractedPath.replace(/Penyimpanan internal/i, '/storage/emulated/0');
+                extractedPath = extractedPath.replace(/Internal storage/i, '/storage/emulated/0');
+                
+                // Memotong nama file di belakang agar menyisakan foldernya saja
                 const lastSlash = extractedPath.lastIndexOf('/');
                 if (lastSlash > 10) { 
                     extractedPath = extractedPath.substring(0, lastSlash);
                 }
                 
                 document.getElementById('customFolderInput').value = extractedPath;
-                statusBox.innerText = "✅ Alamat berhasil disalin otomatis!";
+                statusBox.innerText = "✅ Alamat berhasil dibaca dan disalin otomatis!";
                 statusBox.style.color = "#3fb950";
             } else {
-                statusBox.innerText = "❌ Alamat /storage/ tidak ditemukan di gambar.";
+                statusBox.innerText = "❌ Jalur lokasi tidak ditemukan di gambar.";
                 statusBox.style.color = "#fe2c55";
             }
         } catch (error) {
