@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
     <style>
-        body { font-family: 'Courier New', Courier, monospace; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+        body { font-family: 'Courier New', Courier, monospace; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .container { background: #161b22; padding: 25px; border-radius: 10px; border: 1px solid #30363d; width: 100%; max-width: 600px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
         h2 { color: #58a6ff; text-align: center; margin-top: 0; }
         
@@ -46,6 +46,10 @@
         button.action-btn:hover { background: #2ea043; }
         
         .copy-btn { position: absolute; top: -15px; right: 10px; background: #1f6feb; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; display: none; }
+        
+        /* Menyembunyikan widget bawaan google translate */
+        #google_translate_element { display: none; }
+        .goog-te-banner-frame { display: none !important; }
     </style>
 </head>
 <body>
@@ -66,7 +70,7 @@
             ⚠️ <strong>Syarat & Tata Cara (FFmpeg):</strong>
             <ol>
                 <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install ffmpeg -y</code></li>
-                <li>Buka video di <strong>Galeri</strong> &rarr; Klik ikon titik tiga (<strong>...</strong>) &rarr; Pilih <strong>Rincian</strong> &rarr; <em>Screenshot</em> layarnya.</li>
+                <li>Buka video di <strong>Galeri</strong> &rarr; Klik / ketuk ikon titik tiga (<strong>...</strong>) &rarr; Pilih <strong>Rincian</strong> &rarr; <em>Screenshot</em> layarnya.</li>
                 <li>Upload screenshot rincian itu ke kotak hijau di bawah (AI akan mendeteksi folder & nama file otomatis).</li>
                 <li>Klik <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> kodenya di Termux dan tekan Enter.</li>
             </ol>
@@ -192,6 +196,46 @@
         <div class="output-box" id="cmdOutput">Hasil racikan akan muncul di sini...</div>
     </div>
 </div>
+
+<!-- UI TRANSLATE BUATAN SENDIRI -->
+<div style="margin-top: 20px; margin-bottom: 20px; text-align: center;" translate="no">
+    <select id="custom-lang-select" onchange="gantiBahasa(this.value)" style="background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 8px; padding: 8px; font-size: 14px; outline: none; cursor: pointer;">
+        <option value="id">🇮🇩 Bahasa Indonesia</option>
+        <option value="en">🇬🇧 English</option>
+        <option value="ms">🇲🇾 Melayu</option>
+        <option value="jv">🇮🇩 Boso Jowo</option>
+        <option value="su">🇮🇩 Basa Sunda</option>
+        <option value="ja">🇯🇵 日本語 (Jepang)</option>
+        <option value="ar">🇸🇦 العربية (Arab)</option>
+        <option value="zh-CN">🇨🇳 中文 (Mandarin)</option>
+    </select>
+</div>
+
+<!-- Copyright Footer -->
+<footer style="margin-top: 10px; text-align: center; font-size: 12px; color: #8b949e;" translate="no">
+    &copy; 2026 ikram-cyber. All rights reserved.
+</footer>
+
+<!-- SCRIPT TRANSLATE SILUMAN -->
+<div id="google_translate_element"></div>
+<script type="text/javascript">
+    function gantiBahasa(lang) {
+        document.cookie = "googtrans=/id/" + lang + "; path=/";
+        document.cookie = "googtrans=/id/" + lang + "; domain=" + location.hostname + "; path=/";
+        location.reload(); 
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+        let match = document.cookie.match(/(^|;) ?googtrans=([^;]*)(;|$)/);
+        let currentLang = match ? match[2].split('/')[2] : 'id';
+        let select = document.getElementById('custom-lang-select');
+        if(select) select.value = currentLang;
+    });
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement({ pageLanguage: 'id', autoDisplay: false }, 'google_translate_element');
+    }
+    setInterval(() => { if(document.body.style.top !== '0px') document.body.style.top = '0px'; }, 100);
+</script>
+<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
 <script>
     function switchTab(tabId) {
