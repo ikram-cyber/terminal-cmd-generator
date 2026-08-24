@@ -25,8 +25,6 @@
         label { display: block; margin-bottom: 5px; color: #8b949e; font-size: 14px; }
         input[type="text"], select, input[type="file"] { width: 100%; box-sizing: border-box; padding: 10px; background: #010409; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; font-family: 'Courier New', monospace; outline: none; }
         input:focus, select:focus { border-color: #58a6ff; }
-        
-        /* Modifikasi tampilan upload file */
         input[type="file"] { background: #21262d; padding: 8px; cursor: pointer; }
         
         .output-wrapper { position: relative; margin-top: 25px; }
@@ -69,13 +67,15 @@
 
         <div class="input-group">
             <label>Lokasi Folder (Pilih agar Termux tidak nyasar):</label>
-            <select id="folderLocation">
+            <select id="folderLocation" onchange="toggleCustomFolder()">
                 <option value="/storage/emulated/0/DCIM/ScreenRecorder">Folder ScreenRecorder (DCIM)</option>
                 <option value="/storage/emulated/0/ScreenRecorder">Folder ScreenRecorder (Luar)</option>
                 <option value="/storage/emulated/0/Download">Folder Download</option>
                 <option value="/storage/emulated/0/Movies">Folder Movies</option>
                 <option value="/storage/emulated/0/DCIM/Camera">Folder Kamera (DCIM)</option>
+                <option value="custom">⚙️ Ketik Lokasi Sendiri...</option>
             </select>
+            <input type="text" id="customFolderInput" placeholder="Contoh: /storage/emulated/0/WhatsApp/Media" style="display:none; margin-top:10px;">
         </div>
 
         <div class="input-group">
@@ -89,41 +89,26 @@
         <button class="action-btn" onclick="generateFFmpeg()">Generate Command</button>
     </div>
 
-    <!-- TAB: YT-DLP -->
+    <!-- TAB: YT-DLP, GIT, PYTHON (Sama seperti sebelumnya) -->
     <div id="ytdlp" class="tab-content">
-        <div class="input-group">
-            <label>Pilih Aksi:</label>
-            <select id="ytAction">
-                <option value="full">Download Full Video</option>
-                <option value="clip">Potong Video Online (Clipper)</option>
-            </select>
-        </div>
-        <div class="input-group">
-            <label>Link Video (YouTube/TikTok):</label>
-            <input type="text" id="ytInput" placeholder="https://www.youtube.com/watch?v=...">
-        </div>
-        <div class="input-group" id="ytTimeGroup" style="display:none;">
-            <label>Waktu (Format HH:MM:SS):</label>
-            <input type="text" id="ytTime" placeholder="Mulai - Selesai (00:15:00 - 00:15:30)">
-        </div>
+        <div class="input-group"><label>Pilih Aksi:</label><select id="ytAction"><option value="full">Download Full Video</option><option value="clip">Potong Video Online</option></select></div>
+        <div class="input-group"><label>Link Video:</label><input type="text" id="ytInput" placeholder="https://www.youtube.com/..."></div>
+        <div class="input-group" id="ytTimeGroup" style="display:none;"><label>Waktu:</label><input type="text" id="ytTime" placeholder="00:15:00 - 00:15:30"></div>
         <button class="action-btn" onclick="generateYtdlp()">Generate Command</button>
     </div>
 
-    <!-- TAB: GIT -->
     <div id="git" class="tab-content">
         <div class="input-group"><label>Pilih Aksi:</label><select id="gitAction"><option value="push">Full Commit & Push</option><option value="clone">Clone Repository</option></select></div>
         <div class="input-group"><label>URL/Pesan:</label><input type="text" id="gitInput" value="feat: update script"></div>
         <button class="action-btn" onclick="generateGit()">Generate Command</button>
     </div>
 
-    <!-- TAB: PYTHON -->
     <div id="python" class="tab-content">
         <div class="input-group"><label>Pilih Aksi:</label><select id="pyAction"><option value="venv">Buat Virtual Env</option><option value="run">Jalankan Script (Nohup)</option></select></div>
         <div class="input-group"><label>Input:</label><input type="text" id="pyInput" value="main.py"></div>
         <button class="action-btn" onclick="generatePython()">Generate Command</button>
     </div>
 
-    <!-- AREA OUTPUT -->
     <div class="output-wrapper">
         <button id="copyBtn" class="copy-btn" onclick="copyCommand()">Copy</button>
         <div class="output-box" id="cmdOutput">Pilih tab, isi data, dan klik Generate...</div>
@@ -145,6 +130,12 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
+    // Menampilkan kolom input folder manual jika opsi "Ketik Lokasi Sendiri..." dipilih
+    function toggleCustomFolder() {
+        const val = document.getElementById('folderLocation').value;
+        document.getElementById('customFolderInput').style.display = (val === 'custom') ? 'block' : 'none';
+    }
+
     function setOutput(cmd) {
         document.getElementById('cmdOutput').innerText = cmd;
         document.getElementById('copyBtn').style.display = 'block';
@@ -153,12 +144,21 @@
     function generateFFmpeg() {
         const action = document.getElementById('ffAction').value;
         const filePicker = document.getElementById('filePicker');
-        const folderLocation = document.getElementById('folderLocation').value;
+        let folderLocation = document.getElementById('folderLocation').value;
+        
+        // Cek jika pengguna memilih folder custom
+        if (folderLocation === 'custom') {
+            folderLocation = document.getElementById('customFolderInput').value;
+            if (!folderLocation) {
+                alert("Harap ketik lokasi folder manual kamu!");
+                return;
+            }
+        }
+
         const output = document.getElementById('ffOutput').value || 'hasil_proses.mp4';
         
-        let inputName = 'input.mp4'; // Default jika file belum dipilih
+        let inputName = 'input.mp4';
         if (filePicker.files.length > 0) {
-            // Mengambil nama file asli (contoh: Ikram.mp4)
             inputName = filePicker.files[0].name;
         } else {
             alert("Harap pilih file video terlebih dahulu!");
@@ -166,7 +166,6 @@
         }
 
         let ffmpegCmd = '';
-
         if (action === 'compress') {
             ffmpegCmd = `ffmpeg -i "${inputName}" -vcodec libx265 -crf 28 "${output}"`;
         } else if (action === 'extract') {
@@ -178,7 +177,6 @@
             ffmpegCmd = `ffmpeg -i "${inputName}" -ss ${start} -to ${end} -c copy "${output}"`;
         }
         
-        // Merangkai perintah navigasi folder dan eksekusi ffmpeg
         const finalCmd = `cd ${folderLocation} && ${ffmpegCmd}`;
         setOutput(finalCmd);
     }
@@ -194,7 +192,6 @@
             const end = time[1] ? time[1].trim() : '00:00:30';
             cmd = `yt-dlp --download-sections "*${start}-${end}" "${input}"`;
         }
-        // ytdlp diarahkan otomatis ke folder Download
         setOutput(`cd /storage/emulated/0/Download && ${cmd}`);
     }
 
