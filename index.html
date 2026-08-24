@@ -377,15 +377,15 @@
         const input = document.getElementById('ytInput').value || 'LINK_VIDEO';
         let cmd = '';
         
-        // Memaksa penyamaran agar tidak ditolak TikTok
+        // Memaksa penyamaran spesifik sebagai Chrome agar tidak ditolak TikTok
         if (action === 'full') {
-            cmd = `yt-dlp --impersonate "${input}"`;
+            cmd = `yt-dlp --impersonate chrome "${input}"`;
         }
         else if (action === 'clip') {
             const time = document.getElementById('ytTime').value.split('-');
             const start = time[0] ? time[0].trim() : '00:00:00';
             const end = time[1] ? time[1].trim() : '00:00:30';
-            cmd = `yt-dlp --impersonate --download-sections "*${start}-${end}" "${input}"`;
+            cmd = `yt-dlp --impersonate chrome --download-sections "*${start}-${end}" "${input}"`;
         }
         setOutputAndCopy(`cd /storage/emulated/0/Download && ${cmd}`);
     }
