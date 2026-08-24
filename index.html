@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal Command Generator & FFmpeg Helper</title>
+    <title>Terminal Command Generator & Multi-Tool Helper</title>
 
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4659624818164596" crossorigin="anonymous"></script>
@@ -30,8 +30,8 @@
         input:focus, select:focus { border-color: #58a6ff; }
         input[type="file"] { background: #21262d; padding: 8px; cursor: pointer; }
         
-        /* Kotak Panduan Super Clear */
-        .guide-box { background: #1f242c; padding: 15px; border-radius: 8px; border-left: 4px solid #58a6ff; margin-bottom: 20px; font-size: 13px; line-height: 1.6; color: #c9d1d9; }
+        /* Kotak Panduan */
+        .guide-box { background: #1f242c; padding: 15px; border-radius: 8px; border-left: 4px solid #f85149; margin-bottom: 20px; font-size: 13px; line-height: 1.6; color: #c9d1d9; }
         .guide-box ol { margin: 5px 0 0 20px; padding: 0; }
         .guide-box li { margin-bottom: 8px; }
 
@@ -62,16 +62,13 @@
 
     <!-- TAB: FFMPEG -->
     <div id="ffmpeg" class="tab-content active">
-        
-        <!-- PANDUAN YANG MENCAKUP GALERI FOTO -->
         <div class="guide-box">
-            📖 <strong>Cara Penggunaan Super Mudah:</strong>
+            ⚠️ <strong>Syarat & Tata Cara (FFmpeg):</strong>
             <ol>
-                <li>Buka video di <strong>Galeri Foto</strong> atau <strong>File Manager</strong>.</li>
-                <li>Ketuk ikon titik tiga (<strong>...</strong>), lalu pilih <strong>Rincian / Details</strong>.</li>
-                <li>Ambil tangkapan layar (<em>Screenshot</em>) halaman rincian tersebut.</li>
-                <li>Upload foto screenshot rincian itu ke kotak hijau di bawah. AI web akan otomatis membaca folder & namanya!</li>
-                <li>Klik <strong>GENERATE & COPY</strong>, lalu buka aplikasi <strong>Termux</strong>, <em>Paste</em> (Tempel) kodenya dan tekan Enter. Selesai!</li>
+                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install ffmpeg -y</code></li>
+                <li>Buka video di <strong>Galeri</strong> $\rightarrow$ Ketik titik tiga (<strong>...</strong>) $\rightarrow$ <strong>Rincian</strong> $\rightarrow$ <em>Screenshot</em>.</li>
+                <li>Upload screenshot rincian itu ke kotak hijau di bawah (AI akan mendeteksi folder & nama file otomatis).</li>
+                <li>Klik <strong>GENERATE & COPY</strong>, lalu <em>Paste</em> kodenya di Termux dan tekan Enter.</li>
             </ol>
         </div>
 
@@ -84,7 +81,6 @@
             </select>
         </div>
         
-        <!-- Fitur AI OCR -->
         <div id="ocrBox">
             <label style="color: #3fb950;">📸 2. Upload Screenshot Rincian File:</label>
             <input type="file" id="screenshotPicker" accept="image/*" onchange="processScreenshot(this)">
@@ -92,12 +88,12 @@
         </div>
 
         <div class="input-group">
-            <label>Folder Lokasi (Terisi Otomatis oleh AI):</label>
+            <label>Folder Lokasi:</label>
             <input type="text" id="folderLocation" value="/storage/emulated/0/DCIM/ScreenRecorder">
         </div>
         
         <div class="input-group">
-            <label>Nama File Input (Terisi Otomatis oleh AI):</label>
+            <label>Nama File Input:</label>
             <input type="text" id="fileNameInput" placeholder="Contoh: video.mp4">
         </div>
 
@@ -107,33 +103,92 @@
         </div>
         <div class="input-group" id="ffTimeGroup" style="display:none;">
             <label>Waktu Potong (Format HH:MM:SS):</label>
-            <input type="text" id="ffTime" placeholder="Mulai - Selesai (00:00:10 - 00:00:30)">
+            <input type="text" id="ffTime" placeholder="00:00:10 - 00:00:30">
         </div>
         <button class="action-btn" onclick="generateFFmpeg()">GENERATE & COPY</button>
     </div>
 
-    <!-- TAB: YT-DLP, GIT, PYTHON -->
+    <!-- TAB: YT-DLP -->
     <div id="ytdlp" class="tab-content">
-        <div class="input-group"><label>Pilih Aksi:</label><select id="ytAction"><option value="full">Download Full Video</option><option value="clip">Potong Video Online</option></select></div>
-        <div class="input-group"><label>Link Video:</label><input type="text" id="ytInput" placeholder="https://www.youtube.com/..."></div>
-        <div class="input-group" id="ytTimeGroup" style="display:none;"><label>Waktu:</label><input type="text" id="ytTime" placeholder="00:15:00 - 00:15:30"></div>
+        <div class="guide-box" style="border-left-color: #238636;">
+            📥 <strong>Tata Cara (yt-dlp - Download Video):</strong>
+            <ol>
+                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install python ffmpeg -y && pip install yt-dlp</code></li>
+                <li>Salin link video dari YouTube / TikTok.</li>
+                <li>Tempel link pada kolom di bawah ini.</li>
+                <li>Klik <strong>GENERATE & COPY</strong>, lalu *Paste* di Termux. Hasil tersimpan di folder Download.</li>
+            </ol>
+        </div>
+        <div class="input-group">
+            <label>Pilih Aksi:</label>
+            <select id="ytAction">
+                <option value="full">Download Full Video</option>
+                <option value="clip">Potong Video Online</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Link Video (YouTube/TikTok):</label>
+            <input type="text" id="ytInput" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+        <div class="input-group" id="ytTimeGroup" style="display:none;">
+            <label>Waktu Potong:</label>
+            <input type="text" id="ytTime" placeholder="00:15:00 - 00:15:30">
+        </div>
         <button class="action-btn" onclick="generateYtdlp()">GENERATE & COPY</button>
     </div>
 
+    <!-- TAB: GIT -->
     <div id="git" class="tab-content">
-        <div class="input-group"><label>Pilih Aksi:</label><select id="gitAction"><option value="push">Full Commit & Push</option><option value="clone">Clone Repository</option></select></div>
-        <div class="input-group"><label>URL/Pesan:</label><input type="text" id="gitInput" value="feat: update script"></div>
+        <div class="guide-box" style="border-left-color: #1f6feb;">
+            🐙 <strong>Tata Cara (Git - GitHub Version Control):</strong>
+            <ol>
+                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install git -y</code></li>
+                <li>Untuk <em>Push</em>: Pastikan Termux sudah masuk ke folder *project* kamu (`cd folder-project`).</li>
+                <li>Untuk <em>Clone</em>: Cukup masukkan URL repository GitHub.</li>
+                <li>Klik <strong>GENERATE & COPY</strong> dan *Paste* di Termux.</li>
+            </ol>
+        </div>
+        <div class="input-group">
+            <label>Pilih Aksi:</label>
+            <select id="gitAction">
+                <option value="push">Full Commit & Push</option>
+                <option value="clone">Clone Repository</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>URL / Pesan Commit:</label>
+            <input type="text" id="gitInput" value="feat: update script">
+        </div>
         <button class="action-btn" onclick="generateGit()">GENERATE & COPY</button>
     </div>
 
+    <!-- TAB: PYTHON -->
     <div id="python" class="tab-content">
-        <div class="input-group"><label>Pilih Aksi:</label><select id="pyAction"><option value="venv">Buat Virtual Env</option><option value="run">Jalankan Script (Nohup)</option></select></div>
-        <div class="input-group"><label>Input:</label><input type="text" id="pyInput" value="main.py"></div>
+        <div class="guide-box" style="border-left-color: #d29922;">
+            🐍 <strong>Tata Cara (Python Script Runner):</strong>
+            <ol>
+                <li><strong>Instalasi Termux (Sekali saja):</strong> <code style="color: #7ee787;">pkg update && pkg install python -y</code></li>
+                <li>Masukkan nama file *script* Python kamu (misal: `main.py`).</li>
+                <li>Pilih apakah ingin membuat *Virtual Environment* atau langsung menjalankannya di latar belakang (`nohup`).</li>
+                <li>Klik <strong>GENERATE & COPY</strong> dan *Paste* di Termux.</li>
+            </ol>
+        </div>
+        <div class="input-group">
+            <label>Pilih Aksi:</label>
+            <select id="pyAction">
+                <option value="venv">Buat Virtual Env</option>
+                <option value="run">Jalankan Script (Nohup)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Nama Script / Folder:</label>
+            <input type="text" id="pyInput" value="main.py">
+        </div>
         <button class="action-btn" onclick="generatePython()">GENERATE & COPY</button>
     </div>
 
     <div class="output-wrapper">
-        <button id="copyBtn" class="copy-btn" onclick="Copy Manual">Copy Manual</button>
+        <button id="copyBtn" class="copy-btn" onclick="copyCommand()">Copy Manual</button>
         <div class="output-box" id="cmdOutput">Hasil racikan akan muncul di sini...</div>
     </div>
 </div>
