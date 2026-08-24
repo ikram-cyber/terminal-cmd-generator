@@ -30,10 +30,10 @@
         input:focus, select:focus { border-color: #58a6ff; }
         input[type="file"] { background: #21262d; padding: 8px; cursor: pointer; }
         
-        /* Kotak Panduan untuk Pengunjung */
-        .guide-box { background: #1f242c; padding: 15px; border-radius: 8px; border-left: 4px solid #58a6ff; margin-bottom: 20px; font-size: 13px; line-height: 1.5; color: #c9d1d9; }
+        /* Kotak Panduan Super Clear */
+        .guide-box { background: #1f242c; padding: 15px; border-radius: 8px; border-left: 4px solid #58a6ff; margin-bottom: 20px; font-size: 13px; line-height: 1.6; color: #c9d1d9; }
         .guide-box ol { margin: 5px 0 0 20px; padding: 0; }
-        .guide-box li { margin-bottom: 5px; }
+        .guide-box li { margin-bottom: 8px; }
 
         #ocrBox { display: block; background: #111a14; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px dashed #3fb950; }
         #ocrStatus { font-size: 13px; margin-top: 8px; font-weight: bold; }
@@ -63,14 +63,15 @@
     <!-- TAB: FFMPEG -->
     <div id="ffmpeg" class="tab-content active">
         
-        <!-- PANDUAN OTOMATIS UNTUK PENGUNJUNG -->
+        <!-- PANDUAN YANG MENCAKUP GALERI FOTO -->
         <div class="guide-box">
-            💡 <strong>Cara Pakai untuk Pengunjung:</strong>
+            📖 <strong>Cara Penggunaan Super Mudah:</strong>
             <ol>
-                <li>Buka File Manager HP, cari video yang ingin diproses.</li>
-                <li>Tahan file video tersebut, lalu pilih <strong>Rincian / Details</strong>.</li>
+                <li>Buka video di <strong>Galeri Foto</strong> atau <strong>File Manager</strong>.</li>
+                <li>Ketuk ikon titik tiga (<strong>...</strong>), lalu pilih <strong>Rincian / Details</strong>.</li>
                 <li>Ambil tangkapan layar (<em>Screenshot</em>) halaman rincian tersebut.</li>
-                <li>Upload screenshot-nya ke kotak hijau di bawah ini! AI akan mendeteksi folder & namanya secara otomatis.</li>
+                <li>Upload foto screenshot rincian itu ke kotak hijau di bawah. AI web akan otomatis membaca folder & namanya!</li>
+                <li>Klik <strong>GENERATE & COPY</strong>, lalu buka aplikasi <strong>Termux</strong>, <em>Paste</em> (Tempel) kodenya dan tekan Enter. Selesai!</li>
             </ol>
         </div>
 
@@ -87,16 +88,16 @@
         <div id="ocrBox">
             <label style="color: #3fb950;">📸 2. Upload Screenshot Rincian File:</label>
             <input type="file" id="screenshotPicker" accept="image/*" onchange="processScreenshot(this)">
-            <div id="ocrStatus" style="color: #8b949e;">Menunggu upload screenshot rincian HP...</div>
+            <div id="ocrStatus" style="color: #8b949e;">Pilih gambar screenshot dari galeri...</div>
         </div>
 
         <div class="input-group">
-            <label>Folder Lokasi (Otomatis / Manual):</label>
+            <label>Folder Lokasi (Terisi Otomatis oleh AI):</label>
             <input type="text" id="folderLocation" value="/storage/emulated/0/DCIM/ScreenRecorder">
         </div>
         
         <div class="input-group">
-            <label>Nama File Input (Otomatis / Manual):</label>
+            <label>Nama File Input (Terisi Otomatis oleh AI):</label>
             <input type="text" id="fileNameInput" placeholder="Contoh: video.mp4">
         </div>
 
@@ -132,7 +133,7 @@
     </div>
 
     <div class="output-wrapper">
-        <button id="copyBtn" class="copy-btn" onclick="copyCommand()">Copy Manual</button>
+        <button id="copyBtn" class="copy-btn" onclick="Copy Manual">Copy Manual</button>
         <div class="output-box" id="cmdOutput">Hasil racikan akan muncul di sini...</div>
     </div>
 </div>
@@ -156,7 +157,7 @@
         if (!input.files || input.files.length === 0) return;
         const statusBox = document.getElementById('ocrStatus');
         
-        statusBox.innerText = "⏳ AI sedang membaca screenshot pengunjung...";
+        statusBox.innerText = "⏳ AI sedang membaca screenshot rincian...";
         statusBox.style.color = "#58a6ff";
 
         try {
@@ -205,7 +206,7 @@
                     statusBox.style.color = "#d29922";
                 }
             } else {
-                statusBox.innerText = "❌ Jalur 'Penyimpanan internal/' tidak ditemukan di gambar.";
+                statusBox.innerText = "❌ Jalur penyimpanan tidak ditemukan di gambar screenshot.";
                 statusBox.style.color = "#fe2c55";
             }
         } catch (error) {
