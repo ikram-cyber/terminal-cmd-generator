@@ -8,6 +8,9 @@
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4659624818164596" crossorigin="anonymous"></script>
 
+    <!-- Library OCR Tesseract.js untuk membaca gambar -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
     <style>
         body { font-family: 'Courier New', Courier, monospace; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
         .container { background: #161b22; padding: 25px; border-radius: 10px; border: 1px solid #30363d; width: 100%; max-width: 600px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
@@ -26,6 +29,10 @@
         input[type="text"], select, input[type="file"] { width: 100%; box-sizing: border-box; padding: 10px; background: #010409; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; font-family: 'Courier New', monospace; outline: none; }
         input:focus, select:focus { border-color: #58a6ff; }
         input[type="file"] { background: #21262d; padding: 8px; cursor: pointer; }
+        
+        /* Area khusus Scanner OCR */
+        #ocrBox { display: none; background: #111a14; padding: 15px; border-radius: 6px; margin-top: 10px; border: 1px dashed #3fb950; }
+        #ocrStatus { font-size: 13px; margin-top: 8px; font-weight: bold; }
         
         .output-wrapper { position: relative; margin-top: 25px; }
         .output-box { background: #000; padding: 15px; border-radius: 6px; border: 1px solid #3fb950; color: #3fb950; font-size: 15px; min-height: 50px; word-wrap: break-word; }
@@ -61,21 +68,28 @@
         </div>
         
         <div class="input-group">
-            <label>Pilih File Video di HP:</label>
+            <label>Pilih File Video di HP (Untuk Nama):</label>
             <input type="file" id="filePicker" accept="video/*">
         </div>
 
         <div class="input-group">
-            <label>Lokasi Folder (Pilih agar Termux tidak nyasar):</label>
+            <label>Lokasi Folder (Agar Termux tidak nyasar):</label>
             <select id="folderLocation" onchange="toggleCustomFolder()">
                 <option value="/storage/emulated/0/DCIM/ScreenRecorder">Folder ScreenRecorder (DCIM)</option>
                 <option value="/storage/emulated/0/ScreenRecorder">Folder ScreenRecorder (Luar)</option>
                 <option value="/storage/emulated/0/Download">Folder Download</option>
                 <option value="/storage/emulated/0/Movies">Folder Movies</option>
-                <option value="/storage/emulated/0/DCIM/Camera">Folder Kamera (DCIM)</option>
-                <option value="custom">⚙️ Ketik Lokasi Sendiri...</option>
+                <option value="custom">⚙️ Ketik Lokasi Sendiri (Atau dari Screenshot)</option>
             </select>
+            
             <input type="text" id="customFolderInput" placeholder="Contoh: /storage/emulated/0/WhatsApp/Media" style="display:none; margin-top:10px;">
+            
+            <!-- Fitur AI OCR -->
+            <div id="ocrBox">
+                <label style="color: #3fb950;">📸 Malas ngetik? Upload Screenshot Rincian File:</label>
+                <input type="file" id="screenshotPicker" accept="image/*" onchange="processScreenshot(this)">
+                <div id="ocrStatus"></div>
+            </div>
         </div>
 
         <div class="input-group">
@@ -89,7 +103,7 @@
         <button class="action-btn" onclick="generateFFmpeg()">Generate Command</button>
     </div>
 
-    <!-- TAB: YT-DLP, GIT, PYTHON (Sama seperti sebelumnya) -->
+    <!-- TAB: YT-DLP, GIT, PYTHON -->
     <div id="ytdlp" class="tab-content">
         <div class="input-group"><label>Pilih Aksi:</label><select id="ytAction"><option value="full">Download Full Video</option><option value="clip">Potong Video Online</option></select></div>
         <div class="input-group"><label>Link Video:</label><input type="text" id="ytInput" placeholder="https://www.youtube.com/..."></div>
@@ -130,10 +144,49 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
-    // Menampilkan kolom input folder manual jika opsi "Ketik Lokasi Sendiri..." dipilih
+    // Menampilkan kotak custom dan scanner OCR
     function toggleCustomFolder() {
         const val = document.getElementById('folderLocation').value;
         document.getElementById('customFolderInput').style.display = (val === 'custom') ? 'block' : 'none';
+        document.getElementById('ocrBox').style.display = (val === 'custom') ? 'block' : 'none';
+    }
+
+    // FUNGSI AI MEMBACA SCREENSHOT
+    async function processScreenshot(input) {
+        if (!input.files || input.files.length === 0) return;
+        const statusBox = document.getElementById('ocrStatus');
+        
+        statusBox.innerText = "⏳ Mesin AI sedang membaca teks gambar... (Tunggu sebentar)";
+        statusBox.style.color = "#58a6ff";
+
+        try {
+            const image = input.files[0];
+            const result = await Tesseract.recognize(image, 'eng');
+            const text = result.data.text;
+            
+            // AI mencari teks yang diawali dengan /storage/
+            const match = text.match(/\/storage\/[^\s\n]+/i);
+            
+            if (match) {
+                let extractedPath = match[0];
+                // Memotong nama file di belakang (Ikram.mp4) agar menyisakan jalur foldernya saja
+                const lastSlash = extractedPath.lastIndexOf('/');
+                if (lastSlash > 10) { 
+                    extractedPath = extractedPath.substring(0, lastSlash);
+                }
+                
+                document.getElementById('customFolderInput').value = extractedPath;
+                statusBox.innerText = "✅ Alamat berhasil disalin otomatis!";
+                statusBox.style.color = "#3fb950";
+            } else {
+                statusBox.innerText = "❌ Alamat /storage/ tidak ditemukan di gambar.";
+                statusBox.style.color = "#fe2c55";
+            }
+        } catch (error) {
+            console.error(error);
+            statusBox.innerText = "❌ Terjadi kesalahan mesin pemindai.";
+            statusBox.style.color = "#fe2c55";
+        }
     }
 
     function setOutput(cmd) {
@@ -146,11 +199,10 @@
         const filePicker = document.getElementById('filePicker');
         let folderLocation = document.getElementById('folderLocation').value;
         
-        // Cek jika pengguna memilih folder custom
         if (folderLocation === 'custom') {
             folderLocation = document.getElementById('customFolderInput').value;
             if (!folderLocation) {
-                alert("Harap ketik lokasi folder manual kamu!");
+                alert("Harap ketik lokasi atau scan screenshot!");
                 return;
             }
         }
@@ -177,7 +229,7 @@
             ffmpegCmd = `ffmpeg -i "${inputName}" -ss ${start} -to ${end} -c copy "${output}"`;
         }
         
-        const finalCmd = `cd ${folderLocation} && ${ffmpegCmd}`;
+        const finalCmd = `cd "${folderLocation}" && ${ffmpegCmd}`;
         setOutput(finalCmd);
     }
 
