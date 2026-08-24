@@ -3,192 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal Command Generator</title>
-
+    <title>Web Video Editor (WASM)</title>
+    
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4659624818164596" crossorigin="anonymous"></script>
+    
+    <!-- FFmpeg WebAssembly -->
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
     <style>
-        body { font-family: 'Courier New', Courier, monospace; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
-        .container { background: #161b22; padding: 25px; border-radius: 10px; border: 1px solid #30363d; width: 100%; max-width: 600px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-        h2 { color: #58a6ff; text-align: center; margin-top: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+        .container { background: #161b22; padding: 30px; border-radius: 12px; border: 1px solid #30363d; width: 100%; max-width: 500px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); text-align: center; }
+        h2 { color: #3fb950; margin-top: 0; }
+        p { color: #8b949e; font-size: 14px; margin-bottom: 25px; }
         
-        /* Tab Styles */
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
-        .tab-btn { flex: 1; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 10px; cursor: pointer; border-radius: 6px; font-weight: bold; transition: 0.2s; }
-        .tab-btn.active { background: #1f6feb; border-color: #1f6feb; color: white; }
-        .tab-btn:hover:not(.active) { background: #30363d; }
+        .upload-box { border: 2px dashed #30363d; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #010409; }
+        input[type="file"] { width: 100%; color: #c9d1d9; }
         
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        select { width: 100%; padding: 12px; background: #21262d; border: 1px solid #30363d; color: white; border-radius: 6px; margin-bottom: 20px; font-size: 15px; outline: none; }
         
-        /* Form Inputs */
-        .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #8b949e; font-size: 14px; }
-        input, select { width: 100%; box-sizing: border-box; padding: 10px; background: #010409; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; font-family: 'Courier New', monospace; outline: none; }
-        input:focus, select:focus { border-color: #58a6ff; }
+        button { background: #238636; color: white; border: none; padding: 15px; width: 100%; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #2ea043; }
+        button:disabled { background: #1a5c27; cursor: not-allowed; color: #8b949e; }
         
-        /* Output Box */
-        .output-wrapper { position: relative; margin-top: 25px; }
-        .output-box { background: #000; padding: 15px; border-radius: 6px; border: 1px solid #3fb950; color: #3fb950; font-size: 15px; min-height: 50px; word-wrap: break-word; }
-        .output-box::before { content: "$ "; color: #8b949e; }
+        #logConsole { background: #000; color: #3fb950; padding: 15px; border-radius: 6px; border: 1px solid #30363d; margin-top: 20px; font-family: monospace; font-size: 13px; text-align: left; height: 100px; overflow-y: auto; display: none; }
         
-        button.action-btn { background: #238636; color: white; border: none; padding: 12px; width: 100%; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-        button.action-btn:hover { background: #2ea043; }
-        
-        .copy-btn { position: absolute; top: -15px; right: 10px; background: #1f6feb; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; display: none; }
-        .copy-btn:hover { background: #388bfd; }
+        #downloadBtn { display: none; background: #1f6feb; margin-top: 15px; text-decoration: none; padding: 15px; border-radius: 6px; font-weight: bold; color: white; }
+        #downloadBtn:hover { background: #388bfd; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>>_ CMD Generator</h2>
+    <h2>🎥 Web Video Processor</h2>
+    <p>Proses video 100% di HP kamu tanpa upload ke server luar.</p>
     
-    <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('ffmpeg')">FFmpeg</button>
-        <button class="tab-btn" onclick="switchTab('git')">Git</button>
-        <button class="tab-btn" onclick="switchTab('python')">Python</button>
+    <div class="upload-box">
+        <input type="file" id="videoFile" accept="video/mp4,video/x-m4v,video/*">
     </div>
-
-    <!-- TAB: FFMPEG -->
-    <div id="ffmpeg" class="tab-content active">
-        <div class="input-group">
-            <label>Pilih Aksi:</label>
-            <select id="ffAction">
-                <option value="compress">Kompres Video (H.265)</option>
-                <option value="extract">Ekstrak Audio (MP3)</option>
-                <option value="cut">Potong Video (Cut)</option>
-            </select>
-        </div>
-        <div class="input-group">
-            <label>Nama File Input (contoh: video.mp4):</label>
-            <input type="text" id="ffInput" value="input.mp4">
-        </div>
-        <div class="input-group">
-            <label>Nama File Output (contoh: hasil.mp4):</label>
-            <input type="text" id="ffOutput" value="output.mp4">
-        </div>
-        <div class="input-group" id="ffTimeGroup" style="display:none;">
-            <label>Waktu (Format HH:MM:SS):</label>
-            <input type="text" id="ffTime" placeholder="Mulai - Selesai (00:00:10 - 00:01:00)">
-        </div>
-        <button class="action-btn" onclick="generateFFmpeg()">Generate Command</button>
-    </div>
-
-    <!-- TAB: GIT -->
-    <div id="git" class="tab-content">
-        <div class="input-group">
-            <label>Pilih Aksi:</label>
-            <select id="gitAction">
-                <option value="push">Full Commit & Push</option>
-                <option value="clone">Clone Repository</option>
-            </select>
-        </div>
-        <div class="input-group">
-            <label>URL Repository / Pesan Commit:</label>
-            <input type="text" id="gitInput" value="feat: update script">
-        </div>
-        <button class="action-btn" onclick="generateGit()">Generate Command</button>
-    </div>
-
-    <!-- TAB: PYTHON -->
-    <div id="python" class="tab-content">
-        <div class="input-group">
-            <label>Pilih Aksi:</label>
-            <select id="pyAction">
-                <option value="venv">Buat & Aktifkan Virtual Env</option>
-                <option value="run">Jalankan Script Background (Nohup)</option>
-            </select>
-        </div>
-        <div class="input-group">
-            <label>Nama Folder / Script Python:</label>
-            <input type="text" id="pyInput" value="main.py">
-        </div>
-        <button class="action-btn" onclick="generatePython()">Generate Command</button>
-    </div>
-
-    <!-- AREA OUTPUT -->
-    <div class="output-wrapper">
-        <button id="copyBtn" class="copy-btn" onclick="copyCommand()">Copy</button>
-        <div class="output-box" id="cmdOutput">Pilih tab, isi data, dan klik Generate...</div>
-    </div>
+    
+    <select id="actionType">
+        <option value="compress">Kompres Video (Kecilkan Ukuran)</option>
+        <option value="extract">Ekstrak Audio (Jadikan MP3)</option>
+    </select>
+    
+    <button id="processBtn" onclick="processMedia()">Mulai Proses</button>
+    
+    <div id="logConsole">Menunggu instruksi...</div>
+    
+    <a id="downloadBtn" href="#">⬇️ Unduh Hasilnya</a>
 </div>
 
 <script>
-    // Logika Ganti Tab
-    function switchTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        event.currentTarget.classList.add('active');
-    }
-
-    // Logika Tampilkan Kolom Waktu Khusus Potong Video
-    document.getElementById('ffAction').addEventListener('change', function() {
-        document.getElementById('ffTimeGroup').style.display = (this.value === 'cut') ? 'block' : 'none';
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    // Menginisialisasi FFmpeg
+    const ffmpeg = createFFmpeg({ 
+        log: true,
+        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
     });
 
-    // Menampilkan Output dan Tombol Copy
-    function setOutput(cmd) {
-        document.getElementById('cmdOutput').innerText = cmd;
-        document.getElementById('copyBtn').style.display = 'block';
+    const processBtn = document.getElementById('processBtn');
+    const logConsole = document.getElementById('logConsole');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    function updateLog(text) {
+        logConsole.style.display = 'block';
+        logConsole.innerHTML += `> ${text}<br>`;
+        logConsole.scrollTop = logConsole.scrollHeight;
     }
 
-    // Generate FFmpeg
-    function generateFFmpeg() {
-        const action = document.getElementById('ffAction').value;
-        const input = document.getElementById('ffInput').value || 'input.mp4';
-        const output = document.getElementById('ffOutput').value || 'output.mp4';
-        let cmd = '';
-
-        if (action === 'compress') cmd = `ffmpeg -i ${input} -vcodec libx265 -crf 28 ${output}`;
-        else if (action === 'extract') cmd = `ffmpeg -i ${input} -q:a 0 -map a ${output.replace('.mp4', '.mp3')}`;
-        else if (action === 'cut') {
-            const time = document.getElementById('ffTime').value.split('-');
-            const start = time[0] ? time[0].trim() : '00:00:00';
-            const end = time[1] ? time[1].trim() : '00:00:30';
-            cmd = `ffmpeg -i ${input} -ss ${start} -to ${end} -c copy ${output}`;
+    async function processMedia() {
+        const fileInput = document.getElementById('videoFile');
+        if (!fileInput.files.length) {
+            alert('Silakan pilih file video terlebih dahulu!');
+            return;
         }
-        setOutput(cmd);
-    }
 
-    // Generate Git
-    function generateGit() {
-        const action = document.getElementById('gitAction').value;
-        const input = document.getElementById('gitInput').value;
-        let cmd = '';
-
-        if (action === 'push') cmd = `git add .\ngit commit -m "${input}"\ngit push`;
-        else if (action === 'clone') cmd = `git clone ${input}`;
+        const file = fileInput.files[0];
+        const action = document.getElementById('actionType').value;
         
-        setOutput(cmd);
-    }
+        // Cek ukuran file (Maksimal 100MB agar browser tidak crash)
+        if (file.size > 100 * 1024 * 1024) {
+            alert('File terlalu besar! Maksimal 100MB agar HP kamu tidak crash.');
+            return;
+        }
 
-    // Generate Python
-    function generatePython() {
-        const action = document.getElementById('pyAction').value;
-        const input = document.getElementById('pyInput').value;
-        let cmd = '';
+        processBtn.disabled = true;
+        downloadBtn.style.display = 'none';
+        logConsole.innerHTML = '';
 
-        if (action === 'venv') cmd = `python -m venv ${input}\nsource ${input}/bin/activate`;
-        else if (action === 'run') cmd = `nohup python ${input} > output.log 2>&1 &`;
-        
-        setOutput(cmd);
-    }
+        try {
+            updateLog('Mengunduh mesin FFmpeg ke browser (Mungkin butuh waktu)...');
+            if (!ffmpeg.isLoaded()) {
+                await ffmpeg.load();
+            }
 
-    // Logika Tombol Copy
-    function copyCommand() {
-        const text = document.getElementById('cmdOutput').innerText;
-        navigator.clipboard.writeText(text).then(() => {
-            const btn = document.getElementById('copyBtn');
-            btn.innerText = "Tersalin!";
-            btn.style.background = "#238636";
-            setTimeout(() => {
-                btn.innerText = "Copy";
-                btn.style.background = "#1f6feb";
-            }, 2000);
-        });
+            updateLog('Membaca file video ke dalam memori...');
+            ffmpeg.FS('writeFile', 'input_video', await fetchFile(file));
+
+            updateLog('Sedang memproses... JANGAN TUTUP TAB INI!');
+            
+            ffmpeg.setProgress(({ ratio }) => {
+                const percent = Math.round(ratio * 100);
+                if (percent > 0 && percent <= 100) {
+                    processBtn.innerText = `Memproses: ${percent}%`;
+                }
+            });
+
+            let outName = '';
+            let outType = '';
+
+            // Eksekusi proses nyata di dalam browser
+            if (action === 'compress') {
+                outName = 'hasil.mp4';
+                outType = 'video/mp4';
+                // Render kompresi (fast preset agar tidak hang)
+                await ffmpeg.run('-i', 'input_video', '-vcodec', 'libx264', '-crf', '28', '-preset', 'ultrafast', outName);
+            } else if (action === 'extract') {
+                outName = 'hasil.mp3';
+                outType = 'audio/mp3';
+                await ffmpeg.run('-i', 'input_video', '-q:a', '0', '-map', 'a', outName);
+            }
+
+            updateLog('Proses selesai! Menyiapkan file untuk diunduh...');
+            
+            // Mengambil hasil dari memori FFmpeg
+            const data = ffmpeg.FS('readFile', outName);
+            const url = URL.createObjectURL(new Blob([data.buffer], { type: outType }));
+
+            downloadBtn.href = url;
+            downloadBtn.download = outName;
+            downloadBtn.style.display = 'block';
+            updateLog('Sukses!');
+
+        } catch (error) {
+            updateLog('ERROR: Gagal memproses. Silakan refresh halaman.');
+            console.error(error);
+        } finally {
+            processBtn.disabled = false;
+            processBtn.innerText = 'Mulai Proses';
+        }
     }
 </script>
 
