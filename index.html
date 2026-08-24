@@ -12,7 +12,9 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
     <style>
-        body { font-family: 'Courier New', Courier, monospace; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+        /* Modifikasi body agar elemen menyusun ke bawah (column) */
+        body { font-family: 'Courier New', Courier, monospace; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
         .container { background: #161b22; padding: 25px; border-radius: 10px; border: 1px solid #30363d; width: 100%; max-width: 600px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
         h2 { color: #58a6ff; text-align: center; margin-top: 0; }
         
@@ -46,6 +48,17 @@
         button.action-btn:hover { background: #2ea043; }
         
         .copy-btn { position: absolute; top: -15px; right: 10px; background: #1f6feb; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; display: none; }
+        
+        /* Styling untuk Footer & UI Translate (Hasil konversi Tailwind) */
+        .custom-translate { margin-top: 25px; margin-bottom: 10px; text-align: center; width: 100%; max-width: 600px; }
+        .custom-lang-select { background: #161b22; color: #c9d1d9; border: 1px solid #30363d; border-radius: 8px; padding: 10px; font-size: 14px; outline: none; cursor: pointer; width: 100%; max-width: 300px; font-family: 'Courier New', monospace; }
+        .custom-lang-select:focus { border-color: #58a6ff; box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.3); }
+        .custom-footer { margin-top: 15px; text-align: center; font-size: 12px; color: #8b949e; width: 100%; }
+
+        /* Sembunyikan Bawaan Google Translate */
+        #google_translate_element { display: none; }
+        .goog-te-banner-frame { display: none !important; }
+        body { top: 0px !important; }
     </style>
 </head>
 <body>
@@ -191,7 +204,48 @@
         <button id="copyBtn" class="copy-btn" onclick="copyCommand()">Copy Manual</button>
         <div class="output-box" id="cmdOutput">Hasil racikan akan muncul di sini...</div>
     </div>
+</div> <!-- End of Container -->
+
+<!-- UI TRANSLATE BUATAN SENDIRI -->
+<div class="custom-translate" translate="no">
+    <select id="custom-lang-select" onchange="gantiBahasa(this.value)" class="custom-lang-select">
+        <option value="id">🇮🇩 Bahasa Indonesia</option>
+        <option value="en">🇬🇧 English</option>
+        <option value="ms">🇲🇾 Melayu</option>
+        <option value="jv">🇮🇩 Boso Jowo</option>
+        <option value="su">🇮🇩 Basa Sunda</option>
+        <option value="ja">🇯🇵 日本語 (Jepang)</option>
+        <option value="ar">🇸🇦 العربية (Arab)</option>
+        <option value="zh-CN">🇨🇳 中文 (Mandarin)</option>
+    </select>
 </div>
+
+<!-- Copyright Footer -->
+<footer class="custom-footer" translate="no">
+    &copy; 2026 ikram-cyber. All rights reserved.
+</footer>
+
+<!-- SCRIPT TRANSLATE SILUMAN -->
+<div id="google_translate_element"></div>
+<script type="text/javascript">
+    function gantiBahasa(lang) {
+        document.cookie = "googtrans=/id/" + lang + "; path=/";
+        document.cookie = "googtrans=/id/" + lang + "; domain=" + location.hostname + "; path=/";
+        location.reload(); 
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+        let match = document.cookie.match(/(^|;) ?googtrans=([^;]*)(;|$)/);
+        let currentLang = match ? match[2].split('/')[2] : 'id';
+        let select = document.getElementById('custom-lang-select');
+        if(select) select.value = currentLang;
+    });
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement({ pageLanguage: 'id', autoDisplay: false }, 'google_translate_element');
+    }
+    // Anti-margin dari Google Translate
+    setInterval(() => { if(document.body.style.top !== '0px') document.body.style.top = '0px'; }, 100);
+</script>
+<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
 <script>
     function switchTab(tabId) {
@@ -208,7 +262,7 @@
         document.getElementById('ytTimeGroup').style.display = (this.value === 'clip') ? 'block' : 'none';
     });
 
-    // FUNGSI AI OCR UNIVERSAL (MENDETEKSI BERBAGAI BAHASA DAN EKSTENSI FILE)
+    // FUNGSI AI OCR UNIVERSAL
     async function processScreenshot(input) {
         if (!input.files || input.files.length === 0) return;
         const statusBox = document.getElementById('ocrStatus');
@@ -221,8 +275,6 @@
             const result = await Tesseract.recognize(image, 'eng');
             let text = result.data.text;
             
-            // AI Universal mencari baris teks yang mengandung ekstensi video (.mp4, .mkv, .mov, .avi)
-            // Ini membuat bahasa HP apa pun (Indonesia, Inggris, Spanyol, dll) tetap terbaca otomatis!
             const lines = text.split(/[\r\n]+/);
             let targetLine = "";
             
@@ -235,7 +287,6 @@
                 }
             }
             
-            // Jika tidak ketemu baris spesifik, gabungkan teks yang mengandung nama file video
             if (!targetLine) {
                 for (let line of lines) {
                     if (/\.(mp4|mkv|mov|avi|webm)/i.test(line)) {
@@ -245,7 +296,6 @@
                 }
             }
 
-            // Jika masih belum ketemu, ambil teks utuh yang ada ekstensi videonya
             if (!targetLine) {
                 const matchExt = text.match(/[^\s\n]+\.(mp4|mkv|mov|avi|webm)/i);
                 if (matchExt) targetLine = matchExt[0];
@@ -253,24 +303,19 @@
 
             if (targetLine) {
                 let cleanPath = targetLine.replace(/[\r\n]+/g, "").trim();
-                
-                // Bersihkan awalan teks sampah jika ada
                 cleanPath = cleanPath.replace(/^.*?(?=\/|Penyimpanan|Internal|\w+:)/i, '');
                 
-                // Batasi hanya sampai ekstensi file video
                 const extMatch = cleanPath.match(/^(.*?(\.(mp4|mkv|mov|avi|webm)))(?:\s|$)/i);
                 if (extMatch) {
                     cleanPath = extMatch[1];
                 }
 
-                // Terjemahan universal awalan bahasa HP ke format Termux
                 cleanPath = cleanPath.replace(/Penyimpanan internal/i, '/storage/emulated/0');
                 cleanPath = cleanPath.replace(/Internal storage/i, '/storage/emulated/0');
                 cleanPath = cleanPath.replace(/Almacenamiento interno/i, '/storage/emulated/0');
                 cleanPath = cleanPath.replace(/Stockage interne/i, '/storage/emulated/0');
                 cleanPath = cleanPath.replace(/["'<>]/g, '');
 
-                // Jika tidak ada awalan /storage/, tapi diawali nama folder umum, berikan awalan standar /storage/emulated/0/
                 if (!cleanPath.startsWith('/storage/') && !cleanPath.startsWith('/sdcard/')) {
                     if (/^(DCIM|Download|Movies|Pictures|WhatsApp|Telegram|Bluetooth)/i.test(cleanPath)) {
                         cleanPath = '/storage/emulated/0/' + cleanPath;
